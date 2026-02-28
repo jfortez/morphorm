@@ -72,16 +72,16 @@ export const FormWithObject = () => (
 // The order of generics is: Schema, Components, Context
 export const FormWithContext = () => (
 	<div>
-		<Forma<typeof formSchema, {}, FormContext>
+		<Forma
 			schema={formSchema}
 			context={{ userId: "123", isAdmin: true }}
 			fields={(autoFields) => {
 				return autoFields.map((field) => ({
 					...field,
 					size: 6,
-					// context is typed as FormContext
+
 					disabled: ({ context }) => !context.isAdmin,
-					// watchContext infers keys: "userId" | "isAdmin"
+
 					watchContext: ["userId"],
 				}));
 			}}
@@ -90,7 +90,8 @@ export const FormWithContext = () => (
 );
 
 // Alternative: Pre-define fields configuration with explicit types
-const fieldsConfig: FieldsConfig<typeof formSchema, {}, FormContext> = (autoFields) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const fieldsConfig: FieldsConfig<typeof formSchema, any, FormContext> = (autoFields) => {
 	return autoFields.map((field) => ({
 		...field,
 		size: 6,
@@ -101,7 +102,7 @@ const fieldsConfig: FieldsConfig<typeof formSchema, {}, FormContext> = (autoFiel
 
 export const FormWithPreDefinedFields = () => (
 	<div>
-		<Forma<typeof formSchema, {}, FormContext>
+		<Forma
 			schema={formSchema}
 			context={{ userId: "123", isAdmin: true }}
 			fields={fieldsConfig}
