@@ -2,7 +2,8 @@
 import type { z } from "zod";
 
 import * as React from "react";
-import { memo, useEffect, useMemo, useRef } from "react";
+import { memo, useEffect, useMemo } from "react";
+import { useStore } from "@tanstack/react-form";
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
 
@@ -101,26 +102,6 @@ interface ContextAwareFieldProps {
 	mode: "value" | "array";
 }
 
-const shallowCompare = (obj1: any, obj2: any): boolean => {
-	if (obj1 === obj2) {
-		return true;
-	}
-	if (!obj1 || !obj2 || typeof obj1 !== "object" || typeof obj2 !== "object") {
-		return false;
-	}
-	const keys1 = Object.keys(obj1);
-	const keys2 = Object.keys(obj2);
-	if (keys1.length !== keys2.length) {
-		return false;
-	}
-	for (const key of keys1) {
-		if (obj1[key] !== obj2[key]) {
-			return false;
-		}
-	}
-	return true;
-};
-
 const getLabelString = (label: unknown): string => {
 	if (typeof label === "string") {
 		return label;
@@ -131,27 +112,8 @@ const getLabelString = (label: unknown): string => {
 const ContextAwareField = ({ col, mode }: ContextAwareFieldProps) => {
 	const form = useFormContext() as unknown as ReturnType<typeof useAppForm>;
 	const { context } = useFormKit();
-	const prevSlicedContextRef = useRef<any>(null);
 
-	const slicedContext = useMemo(() => {
-		if (!col.watchContext || col.watchContext.length === 0) {
-			return undefined;
-		}
-
-		const newResult = col.watchContext.reduce(
-			(acc, key) => ({ ...acc, [key]: context?.[key] }),
-			{} as any,
-		);
-
-		if (shallowCompare(newResult, prevSlicedContextRef.current)) {
-			return prevSlicedContextRef.current;
-		}
-
-		prevSlicedContextRef.current = newResult;
-		return newResult;
-	}, [context, col.watchContext]);
-
-	const prevWatchedValuesRef = useRef<Record<string, unknown>>({});
+	const formState = useStore(form.store, (state) => state);
 
 	const watchedValues = useMemo(() => {
 		if (!col.watch || col.watch.length === 0) {
@@ -160,17 +122,18 @@ const ContextAwareField = ({ col, mode }: ContextAwareFieldProps) => {
 
 		const values: Record<string, unknown> = {};
 		for (const key of col.watch) {
-			const fieldValue = form.getFieldValue(key as never);
-			values[key] = fieldValue;
+			values[key] = (formState as any).values?.[key];
 		}
-
-		if (shallowCompare(values, prevWatchedValuesRef.current)) {
-			return prevWatchedValuesRef.current;
-		}
-
-		prevWatchedValuesRef.current = values;
 		return values;
-	}, [col.watch, form]);
+	}, [formState, col.watch]);
+
+	const slicedContext = useMemo(() => {
+		if (!col.watchContext || col.watchContext.length === 0) {
+			return undefined;
+		}
+
+		return col.watchContext.reduce((acc, key) => ({ ...acc, [key]: context?.[key] }), {} as any);
+	}, [context, col.watchContext]);
 
 	if (mode === "array") {
 		const schema = col.schema![0]!.schema!;

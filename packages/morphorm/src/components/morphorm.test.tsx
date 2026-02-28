@@ -1,4 +1,5 @@
 import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 import { Forma } from "./morphorm";
@@ -886,6 +887,217 @@ describe("FormKit", () => {
 			);
 			expect(discountInput.disabled).toBe(false);
 			expect(discountInput.placeholder).toBe("SAVE20 for 20% off");
+		});
+	});
+
+	describe("Reactive Watch Tests", () => {
+		it("reactively updates placeholder when typing (no initialValues)", async () => {
+			const schema = z.object({
+				firstName: z.string(),
+				lastName: z.string(),
+				fullName: z.string(),
+			});
+
+			const user = userEvent.setup();
+
+			render(
+				<Forma<typeof schema>
+					schema={schema}
+					fields={[
+						{
+							name: "firstName",
+							type: "text",
+							size: 6,
+							label: "First Name",
+						},
+						{
+							name: "lastName",
+							type: "text",
+							size: 6,
+							label: "Last Name",
+						},
+						{
+							name: "fullName",
+							type: "text",
+							size: 12,
+							label: "Full Name",
+							watch: ["firstName", "lastName"],
+							placeholder: ({ fieldValues }) => {
+								const first = fieldValues.firstName || "Enter";
+								const last = fieldValues.lastName || "name";
+								return `${first} ${last}`;
+							},
+							disabled: ({ fieldValues }) => !fieldValues.firstName || !fieldValues.lastName,
+						},
+					]}
+					onSubmit={mockSubmit}
+					showSubmit
+				/>,
+			);
+
+			const fullNameInput = screen.getByTestId("input-fullName") as HTMLInputElement;
+			const firstNameInput = screen.getByTestId("input-firstName");
+			const lastNameInput = screen.getByTestId("input-lastName");
+
+			expect(fullNameInput.disabled).toBe(true);
+			expect(fullNameInput.placeholder).toBe("Enter name");
+
+			await user.type(firstNameInput, "John");
+			expect(fullNameInput.placeholder).toBe("John name");
+
+			await user.type(lastNameInput, "Doe");
+			expect(fullNameInput.placeholder).toBe("John Doe");
+			expect(fullNameInput.disabled).toBe(false);
+
+			await user.clear(firstNameInput);
+			expect(fullNameInput.placeholder).toBe("Enter Doe");
+			expect(fullNameInput.disabled).toBe(true);
+		});
+
+		it("reactively updates company fields when checkbox changes", async () => {
+			const schema = z.object({
+				isCompany: z.boolean(),
+				companyName: z.string(),
+				taxId: z.string(),
+			});
+
+			const user = userEvent.setup();
+
+			render(
+				<Forma<typeof schema>
+					schema={schema}
+					fields={[
+						{
+							name: "isCompany",
+							type: "checkbox",
+							size: 12,
+							label: "Is this a company?",
+						},
+						{
+							name: "companyName",
+							type: "text",
+							size: 6,
+							label: "Company Name",
+							watch: ["isCompany"],
+							disabled: ({ fieldValues }) => !fieldValues.isCompany,
+							description: ({ fieldValues }) =>
+								fieldValues.isCompany ? "Enter company name" : "Check box to enable",
+						},
+						{
+							name: "taxId",
+							type: "text",
+							size: 6,
+							label: ({ fieldValues }) => (fieldValues.isCompany ? "Tax ID (Required)" : "Tax ID"),
+							watch: ["isCompany"],
+							placeholder: ({ fieldValues }) => (fieldValues.isCompany ? "XX-XXXXXXX" : "N/A"),
+							disabled: ({ fieldValues }) => !fieldValues.isCompany,
+						},
+					]}
+					onSubmit={mockSubmit}
+					showSubmit
+				/>,
+			);
+
+			const checkbox = screen.getByTestId("checkbox-isCompany");
+			const companyNameInput = screen.getByTestId("input-companyName") as HTMLInputElement;
+			const taxIdInput = screen.getByTestId("input-taxId") as HTMLInputElement;
+
+			expect(companyNameInput.disabled).toBe(true);
+			expect(taxIdInput.disabled).toBe(true);
+			expect(taxIdInput.placeholder).toBe("N/A");
+			expect(screen.getByTestId("label-taxId")).toHaveTextContent("Tax ID");
+
+			await user.click(checkbox);
+
+			expect(companyNameInput.disabled).toBe(false);
+			expect(taxIdInput.disabled).toBe(false);
+			expect(taxIdInput.placeholder).toBe("XX-XXXXXXX");
+			expect(screen.getByTestId("label-taxId")).toHaveTextContent("Tax ID (Required)");
+			expect(screen.getByTestId("description-companyName")).toHaveTextContent("Enter company name");
+
+			await user.click(checkbox);
+
+			expect(companyNameInput.disabled).toBe(true);
+			expect(taxIdInput.disabled).toBe(true);
+			expect(taxIdInput.placeholder).toBe("N/A");
+			expect(screen.getByTestId("label-taxId")).toHaveTextContent("Tax ID");
+		});
+
+		it("reactively calculates totals from multiple fields", async () => {
+			const schema = z.object({
+				quantity: z.number(),
+				unitPrice: z.number(),
+				total: z.number(),
+			});
+
+			const user = userEvent.setup();
+
+			render(
+				<Forma<typeof schema>
+					schema={schema}
+					fields={[
+						{
+							name: "quantity",
+							type: "number",
+							size: 6,
+							label: "Quantity",
+						},
+						{
+							name: "unitPrice",
+							type: "number",
+							size: 6,
+							label: "Unit Price",
+						},
+						{
+							name: "total",
+							type: "number",
+							size: 12,
+							label: "Total",
+							watch: ["quantity", "unitPrice"],
+							placeholder: ({ fieldValues }) => {
+								const qty = Number(fieldValues.quantity) || 0;
+								const price = Number(fieldValues.unitPrice) || 0;
+								return `Total: $${(qty * price).toFixed(2)}`;
+							},
+							disabled: ({ fieldValues }) => !fieldValues.quantity || !fieldValues.unitPrice,
+							description: ({ fieldValues }) => {
+								const qty = Number(fieldValues.quantity) || 0;
+								const price = Number(fieldValues.unitPrice) || 0;
+								const total = qty * price;
+								if (total > 100) {
+									return "High value!";
+								}
+								if (total > 0) {
+									return `Subtotal: $${total.toFixed(2)}`;
+								}
+								return "Enter values";
+							},
+						},
+					]}
+					onSubmit={mockSubmit}
+					showSubmit
+				/>,
+			);
+
+			const totalInput = screen.getByTestId("number-total") as HTMLInputElement;
+			const quantityInput = screen.getByTestId("number-quantity");
+			const priceInput = screen.getByTestId("number-unitPrice");
+
+			expect(totalInput.disabled).toBe(true);
+			expect(totalInput.placeholder).toBe("Total: $0.00");
+
+			await user.type(quantityInput, "5");
+			expect(totalInput.disabled).toBe(true);
+
+			await user.type(priceInput, "10");
+			expect(totalInput.disabled).toBe(false);
+			expect(totalInput.placeholder).toBe("Total: $50.00");
+			expect(screen.getByTestId("description-total")).toHaveTextContent("Subtotal: $50.00");
+
+			await user.clear(quantityInput);
+			await user.type(quantityInput, "20");
+			expect(totalInput.placeholder).toBe("Total: $200.00");
+			expect(screen.getByTestId("description-total")).toHaveTextContent("High value!");
 		});
 	});
 
