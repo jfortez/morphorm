@@ -29,21 +29,21 @@ import { Forma } from "morphorm";
 import { z } from "zod";
 
 const schema = z.object({
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email("Invalid email"),
-  age: z.number().min(0).optional(),
+	name: z.string().min(1, "Name is required"),
+	email: z.string().email("Invalid email"),
+	age: z.number().min(0).optional(),
 });
 
 function MyForm() {
-  return (
-    <Forma
-      schema={schema}
-      onSubmit={async (values) => {
-        console.log("Submitted:", values);
-      }}
-      showSubmit={true}
-    />
-  );
+	return (
+		<Forma
+			schema={schema}
+			onSubmit={async (values) => {
+				console.log("Submitted:", values);
+			}}
+			showSubmit={true}
+		/>
+	);
 }
 ```
 
@@ -53,22 +53,22 @@ function MyForm() {
 
 ```tsx
 <Forma
-  schema={schema}
-  fields={[
-    {
-      name: "name",
-      type: "text",
-      label: "Full Name",
-      placeholder: "Enter your name",
-      size: 6,
-    },
-    {
-      name: "email",
-      type: "text",
-      label: "Email Address",
-      size: 6,
-    },
-  ]}
+	schema={schema}
+	fields={[
+		{
+			name: "name",
+			type: "text",
+			label: "Full Name",
+			placeholder: "Enter your name",
+			size: 6,
+		},
+		{
+			name: "email",
+			type: "text",
+			label: "Email Address",
+			size: 6,
+		},
+	]}
 />
 ```
 
@@ -98,36 +98,36 @@ Watch external context and update fields reactively:
 
 ```tsx
 interface FormContext {
-  userId: number;
-  categories: Array<{ id: string; name: string }>;
+	userId: number;
+	categories: Array<{ id: string; name: string }>;
 }
 
 function MyForm() {
-  const context: FormContext = {
-    userId: 1,
-    categories: [
-      { id: "1", name: "Electronics" },
-      { id: "2", name: "Books" },
-    ],
-  };
+	const context: FormContext = {
+		userId: 1,
+		categories: [
+			{ id: "1", name: "Electronics" },
+			{ id: "2", name: "Books" },
+		],
+	};
 
-  return (
-    <Forma
-      schema={schema}
-      context={context}
-      fields={[
-        {
-          name: "category",
-          type: "select",
-          label: "Category",
-          watchContext: ["categories"], // Re-render when categories change
-          fieldProps: {
-            items: ({ context }) => context?.categories || [],
-          },
-        },
-      ]}
-    />
-  );
+	return (
+		<Forma
+			schema={schema}
+			context={context}
+			fields={[
+				{
+					name: "category",
+					type: "select",
+					label: "Category",
+					watchContext: ["categories"], // Re-render when categories change
+					fieldProps: {
+						items: ({ context }) => context?.categories || [],
+					},
+				},
+			]}
+		/>
+	);
 }
 ```
 
@@ -137,57 +137,57 @@ Create dependent fields that react to other field values:
 
 ```tsx
 const schema = z.object({
-  country: z.string(),
-  state: z.string(),
-  city: z.string(),
+	country: z.string(),
+	state: z.string(),
+	city: z.string(),
 });
 
 const citiesByState: Record<string, string[]> = {
-  california: ["Los Angeles", "San Francisco"],
-  newyork: ["New York City", "Buffalo"],
+	california: ["Los Angeles", "San Francisco"],
+	newyork: ["New York City", "Buffalo"],
 };
 
 <Forma
-  schema={schema}
-  fields={[
-    {
-      name: "country",
-      type: "select",
-      label: "Country",
-      fieldProps: {
-        items: [{ id: "usa", name: "United States" }],
-      },
-    },
-    {
-      name: "state",
-      type: "select",
-      label: "State",
-      watch: ["country"], // Watch country field
-      disabled: ({ fieldValues }) => !fieldValues.country,
-      fieldProps: {
-        items: [
-          { id: "california", name: "California" },
-          { id: "newyork", name: "New York" },
-        ],
-      },
-    },
-    {
-      name: "city",
-      type: "select",
-      label: "City",
-      watch: ["state"], // Watch state field
-      disabled: ({ fieldValues }) => !fieldValues.state,
-      fieldProps: {
-        items: ({ fieldValues }) => {
-          const state = fieldValues.state as string;
-          return (citiesByState[state] || []).map((city) => ({
-            id: city,
-            name: city,
-          }));
-        },
-      },
-    },
-  ]}
+	schema={schema}
+	fields={[
+		{
+			name: "country",
+			type: "select",
+			label: "Country",
+			fieldProps: {
+				items: [{ id: "usa", name: "United States" }],
+			},
+		},
+		{
+			name: "state",
+			type: "select",
+			label: "State",
+			watch: ["country"], // Watch country field
+			disabled: ({ fieldValues }) => !fieldValues.country,
+			fieldProps: {
+				items: [
+					{ id: "california", name: "California" },
+					{ id: "newyork", name: "New York" },
+				],
+			},
+		},
+		{
+			name: "city",
+			type: "select",
+			label: "City",
+			watch: ["state"], // Watch state field
+			disabled: ({ fieldValues }) => !fieldValues.state,
+			fieldProps: {
+				items: ({ fieldValues }) => {
+					const state = fieldValues.state as string;
+					return (citiesByState[state] || []).map((city) => ({
+						id: city,
+						name: city,
+					}));
+				},
+			},
+		},
+	]}
 />;
 ```
 
@@ -270,18 +270,21 @@ Customize the rendering of entire rows:
 
 ```tsx
 <Forma
-  schema={schema}
-  fields={[
-    { name: "name", type: "text", label: "Name", size: 6 },
-    { name: "email", type: "text", label: "Email", size: 6 },
-    { name: "phone", type: "text", label: "Phone", size: 12 },
-  ]}
-  rowOverrides={(grid, rowIndex, fields) => (
-    <Card key={rowIndex} className={`row-${rowIndex}`}>
-      <CardHeader>Section {rowIndex + 1}</CardHeader>
-      <CardContent>{grid}</CardContent>
-    </Card>
-  )}
+	schema={schema}
+	fields={[
+		{ name: "name", type: "text", label: "Name", size: 6 },
+		{ name: "email", type: "text", label: "Email", size: 6 },
+		{ name: "phone", type: "text", label: "Phone", size: 12 },
+	]}
+	rowOverrides={(grid, rowIndex, fields) => (
+		<Card
+			key={rowIndex}
+			className={`row-${rowIndex}`}
+		>
+			<CardHeader>Section {rowIndex + 1}</CardHeader>
+			<CardContent>{grid}</CardContent>
+		</Card>
+	)}
 />
 ```
 
@@ -307,18 +310,18 @@ Handle dynamic arrays with add/remove functionality:
 
 ```tsx
 const schema = z.object({
-  items: z.array(
-    z.object({
-      name: z.string(),
-      quantity: z.number(),
-    }),
-  ),
+	items: z.array(
+		z.object({
+			name: z.string(),
+			quantity: z.number(),
+		}),
+	),
 });
 
 <Forma
-  schema={schema}
-  // Array fields are automatically rendered with collapsible sections
-  // Add/remove buttons are provided automatically
+	schema={schema}
+	// Array fields are automatically rendered with collapsible sections
+	// Add/remove buttons are provided automatically
 />;
 ```
 
@@ -327,24 +330,36 @@ const schema = z.object({
 Extend Forma with custom field components:
 
 ```tsx
-const CustomInput = (props) => <input {...props} className="custom-input" />;
+const CustomInput = (props) => (
+	<input
+		{...props}
+		className="custom-input"
+	/>
+);
 
 const CustomSelect = ({ items, value, onChange, ...props }) => (
-  <select {...props} value={value} onChange={(e) => onChange?.(e.target.value)}>
-    {items?.map((item) => (
-      <option key={item.id} value={item.id}>
-        {item.name}
-      </option>
-    ))}
-  </select>
+	<select
+		{...props}
+		value={value}
+		onChange={(e) => onChange?.(e.target.value)}
+	>
+		{items?.map((item) => (
+			<option
+				key={item.id}
+				value={item.id}
+			>
+				{item.name}
+			</option>
+		))}
+	</select>
 );
 
 <Forma
-  schema={schema}
-  components={{
-    text: CustomInput,
-    select: CustomSelect,
-  }}
+	schema={schema}
+	components={{
+		text: CustomInput,
+		select: CustomSelect,
+	}}
 />;
 ```
 
@@ -354,12 +369,12 @@ Monitor form state changes:
 
 ```tsx
 <Forma
-  schema={schema}
-  onStateChange={(state) => {
-    console.log("Can submit:", state.canSubmit);
-    console.log("Is submitting:", state.isSubmitting);
-    console.log("Is submitted:", state.isSubmitted);
-  }}
+	schema={schema}
+	onStateChange={(state) => {
+		console.log("Can submit:", state.canSubmit);
+		console.log("Is submitting:", state.isSubmitting);
+		console.log("Is submitted:", state.isSubmitted);
+	}}
 />
 ```
 
@@ -369,12 +384,12 @@ Populate form with existing data:
 
 ```tsx
 <Forma
-  schema={schema}
-  initialValues={{
-    name: "John Doe",
-    email: "john@example.com",
-    age: 30,
-  }}
+	schema={schema}
+	initialValues={{
+		name: "John Doe",
+		email: "john@example.com",
+		age: 30,
+	}}
 />
 ```
 
@@ -384,8 +399,8 @@ Forma uses Zod for validation. Errors are automatically displayed:
 
 ```tsx
 const schema = z.object({
-  email: z.string().email("Please enter a valid email"),
-  age: z.number().min(18, "Must be 18 or older"),
+	email: z.string().email("Please enter a valid email"),
+	age: z.number().min(18, "Must be 18 or older"),
 });
 ```
 
@@ -432,8 +447,8 @@ Functions receive an args object with:
 
 ```typescript
 {
-  fieldValues: z.infer<Z>; // Current form values
-  context: Context; // External context
+	fieldValues: z.infer<Z>; // Current form values
+	context: Context; // External context
 }
 ```
 

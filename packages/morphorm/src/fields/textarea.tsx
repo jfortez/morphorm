@@ -2,12 +2,11 @@ import type { FieldProps } from "./type";
 
 import { useFieldContext } from "../components/ui/form";
 
-export const InputField = ({ ...props }: FieldProps) => {
+export const TextAreaField = ({ ...props }: FieldProps) => {
 	const field = useFieldContext<string>();
 	return (
-		<input
-			type="text"
-			className="forma-input"
+		<textarea
+			className="forma-textarea"
 			{...props}
 			name={field.name}
 			value={field.state.value}
@@ -17,4 +16,4 @@ export const InputField = ({ ...props }: FieldProps) => {
 	);
 };
 
-export default InputField;
+export default TextAreaField;

@@ -1,69 +1,71 @@
 {
-  "name": "morphorm",
-  "version": "0.1.2",
-  "description": "Lightweight form library built with React and TanStack Form",
-  "type": "module",
-  "author": {
-    "name": "Jean Caiza",
-    "email": "jeanmcm@hotmail.com",
-    "url": "https://github.com/jfortez"
-  },
-  "repository": {
-    "type": "git ",
-    "url": "git+https://github.com/jfortez/morphorm.git"
-  },
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      }
-    }
-  },
-  "files": [
-    "dist",
-    "README.md"
-  ],
-  "scripts": {
-    "build": "tsdown",
-    "dev": "tsdown --watch",
-    "clean": "rm -rf dist",
-    "typecheck": "tsc --noEmit",
-    "lint": "oxlint",
-    "lint:fix": "oxlint --fix"
-  },
-  "dependencies": {
-    "@morphorm/core": "workspace:*",
-    "@tanstack/react-form": "^1.28.3",
-    "@radix-ui/react-slot": "^1.2.4"
-  },
-  "devDependencies": {
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/user-event": "^14.6.1",
-    "@types/bun": "latest",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "tsdown": "^0.21.0-beta.2",
-    "typescript": "^5"
-  },
-  "peerDependencies": {
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
-    "zod": "^4.3.6"
-  },
-  "keywords": [
-    "react",
-    "form",
-    "tanstack",
-    "typescript",
-    "zod"
-  ],
-  "license": "MIT"
+	"name": "morphorm",
+	"version": "0.1.2",
+	"description": "Lightweight form library built with React and TanStack Form",
+	"keywords": [
+		"form",
+		"react",
+		"tanstack",
+		"typescript",
+		"zod"
+	],
+	"license": "MIT",
+	"author": {
+		"name": "Jean Caiza",
+		"email": "jeanmcm@hotmail.com",
+		"url": "https://github.com/jfortez"
+	},
+	"repository": {
+		"type": "git ",
+		"url": "git+https://github.com/jfortez/morphorm.git"
+	},
+	"files": [
+		"dist",
+		"README.md"
+	],
+	"type": "module",
+	"main": "./dist/index.cjs",
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"import": {
+				"types": "./dist/index.d.ts",
+				"default": "./dist/index.js"
+			},
+			"require": {
+				"types": "./dist/index.d.cts",
+				"default": "./dist/index.cjs"
+			}
+		}
+	},
+	"scripts": {
+		"build": "tsdown",
+		"dev": "tsdown --watch",
+		"clean": "rm -rf dist",
+		"typecheck": "tsc --noEmit",
+		"lint": "oxlint",
+		"lint:fix": "oxlint --fix",
+		"fmt": "oxfmt",
+		"fmt:check": "oxfmt --check"
+	},
+	"dependencies": {
+		"@morphorm/core": "workspace:*",
+		"@radix-ui/react-slot": "^1.2.4",
+		"@tanstack/react-form": "^1.28.3"
+	},
+	"devDependencies": {
+		"@testing-library/jest-dom": "^6.9.1",
+		"@testing-library/user-event": "^14.6.1",
+		"@types/bun": "latest",
+		"@types/react": "^19.2.14",
+		"@types/react-dom": "^19.2.3",
+		"tsdown": "^0.21.0-beta.2",
+		"typescript": "^5"
+	},
+	"peerDependencies": {
+		"react": "^19.2.4",
+		"react-dom": "^19.2.4",
+		"zod": "^4.3.6"
+	}
 }

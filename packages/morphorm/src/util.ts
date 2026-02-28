@@ -1,14 +1,8 @@
 // oxlint-disable typescript/no-explicit-any
 import type { z } from "zod";
-import type { ParsedField } from '@morphorm/core/types'
+import type { ParsedField } from "@morphorm/core/types";
 
-import type {
-	Components,
-	FormaField,
-	FieldTransformer,
-	Sizes,
-	SpacerType,
-} from "./types";
+import type { Components, FormaField, FieldTransformer, Sizes, SpacerType } from "./types";
 
 type _FieldWithoutType<Z extends z.ZodObject<any>> = Omit<
 	Exclude<FormaField<Z, NonNullable<unknown>>, SpacerType>,
@@ -109,9 +103,15 @@ export function generateGrid<Z extends z.ZodObject<any>>(
 }
 
 const toBaseType = (type: string) => {
-	if (type === "string") { return "text"; }
-	if (type === "number") { return "number"; }
-	if (type === "boolean") { return "checkbox"; }
+	if (type === "string") {
+		return "text";
+	}
+	if (type === "number") {
+		return "number";
+	}
+	if (type === "boolean") {
+		return "checkbox";
+	}
 	return "text";
 };
 
@@ -189,7 +189,9 @@ export function parseFields<
 		}
 		if (typeof transformer === "object") {
 			const transformResult = transformer[name];
-			if (!transformResult) { return field as InternalField<Z>; }
+			if (!transformResult) {
+				return field as InternalField<Z>;
+			}
 
 			return {
 				...field,
@@ -204,8 +206,12 @@ export function parseFields<
 	};
 
 	return defaultFields.map((field) => {
-		if (field.type === "fill") { return field; }
-		if (!fieldTransformer) { return field; }
+		if (field.type === "fill") {
+			return field;
+		}
+		if (!fieldTransformer) {
+			return field;
+		}
 		return getTransformResult(field, fieldTransformer);
 	});
 }

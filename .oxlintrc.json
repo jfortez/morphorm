@@ -24,6 +24,7 @@
     "no-ternary": "off",
     "func-style": "off",
     "jsx-props-no-spreading": "off",
+    "react-in-jsx-scope": "off",
   },
   "env": {
     "builtin": true,

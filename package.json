@@ -1,54 +1,58 @@
 {
-  "name": "morphorm-workspace",
-  "private": true,
-  "author": {
-    "name": "Jean Caiza",
-    "email": "jeanmcm@hotmail.com",
-    "url": "https://github.com/jfortez"
-  },
-  "repository": {
-    "type": "git ",
-    "url": "git+https://github.com/jfortez/morphorm.git"
-  },
-  "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo run dev",
-    "lint": "turbo run lint",
-    "lint:fix": "turbo run lint:fix",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "build:pkg": "turbo run build --filter=morphorm",
-    "test": "turbo run test",
-    "check-types": "turbo run check-types",
-    "changeset": "changeset",
-    "version-packages": "changeset version",
-    "release": "bun run build:pkg && changeset publish",
-    "prepare": "husky"
-  },
-  "devDependencies": {
-    "@changesets/changelog-github": "^0.5.2",
-    "@changesets/cli": "^2.29.8",
-    "@happy-dom/global-registrator": "^20.7.0",
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.2",
-    "husky": "^9.1.7",
-    "lint-staged": "^16.3.0",
-    "oxlint": "^1.50.0",
-    "prettier": "^3.7.4",
-    "turbo": "^2.8.12",
-    "typescript": "5.9.2"
-  },
-  "engines": {
-    "node": ">=18"
-  },
-  "packageManager": "bun@1.3.8",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx,mjs,cjs}": "oxlint"
-  },
-  "dependencies": {
-    "zod": "^4.3.6"
-  }
+	"name": "morphorm-workspace",
+	"private": true,
+	"author": {
+		"name": "Jean Caiza",
+		"email": "jeanmcm@hotmail.com",
+		"url": "https://github.com/jfortez"
+	},
+	"repository": {
+		"type": "git ",
+		"url": "git+https://github.com/jfortez/morphorm.git"
+	},
+	"workspaces": [
+		"apps/*",
+		"packages/*"
+	],
+	"scripts": {
+		"build": "turbo run build",
+		"dev": "turbo run dev",
+		"lint": "turbo run lint",
+		"lint:fix": "turbo run lint:fix",
+		"fmt": "turbo run fmt",
+		"fmt:check": "turbo run fmt:check",
+		"build:pkg": "turbo run build --filter=morphorm",
+		"test": "turbo run test",
+		"check-types": "turbo run check-types",
+		"changeset": "changeset",
+		"version-packages": "changeset version",
+		"release": "bun run build:pkg && changeset publish",
+		"prepare": "husky"
+	},
+	"dependencies": {
+		"zod": "^4.3.6"
+	},
+	"devDependencies": {
+		"@changesets/changelog-github": "^0.5.2",
+		"@changesets/cli": "^2.29.8",
+		"@happy-dom/global-registrator": "^20.7.0",
+		"@testing-library/jest-dom": "^6.9.1",
+		"@testing-library/react": "^16.3.2",
+		"husky": "^9.1.7",
+		"lint-staged": "^16.3.0",
+		"oxfmt": "^0.35.0",
+		"oxlint": "^1.50.0",
+		"turbo": "^2.8.12",
+		"typescript": "5.9.2"
+	},
+	"lint-staged": {
+		"*.{js,ts,mjs,cjs,jsx,tsx}": [
+			"oxlint",
+			"oxfmt --no-error-on-unmatched-pattern"
+		]
+	},
+	"engines": {
+		"node": ">=18"
+	},
+	"packageManager": "bun@1.3.8"
 }

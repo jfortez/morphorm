@@ -4,7 +4,7 @@ export interface FieldAttributes {
 	className: string;
 	"data-slot": string;
 	id: string;
-	name: string
+	name: string;
 	placeholder?: string;
 	ref?: any;
 }

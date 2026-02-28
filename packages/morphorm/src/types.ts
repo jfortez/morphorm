@@ -3,7 +3,6 @@ import type { z } from "zod";
 
 import type { FormFieldType } from "./components/form-field";
 
-
 export type Components = Record<string, React.ComponentType<any>>;
 
 export type Sizes = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
@@ -36,15 +35,15 @@ export type FormaField<
 	Context = any,
 > =
 	| (BaseField<ZObject, Context> &
-		FormFieldType<C, ZObject, Context> & {
-			name: keyof z.infer<ZObject>;
-			size?: Sizes;
-			watch?: string[];
-			overrides?: (
-				originalElement: React.JSX.Element,
-				meta: FormFieldType<C, ZObject, Context>,
-			) => React.ReactNode;
-		})
+			FormFieldType<C, ZObject, Context> & {
+				name: keyof z.infer<ZObject>;
+				size?: Sizes;
+				watch?: string[];
+				overrides?: (
+					originalElement: React.JSX.Element,
+					meta: FormFieldType<C, ZObject, Context>,
+				) => React.ReactNode;
+			})
 	| SpacerType;
 
 type MaybePromise<T> = T | Promise<T>;
@@ -80,10 +79,8 @@ export interface Option {
 
 export type SelectOptions = Option[] | Promise<Option[]>;
 
-
-
 export type RowOverrides<Z extends z.ZodObject<any>, C extends Components> = (
 	gridElement: React.JSX.Element,
 	rowIndex: number,
-	fields: FormaField<Z, C>[]
+	fields: FormaField<Z, C>[],
 ) => React.JSX.Element;

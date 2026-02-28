@@ -11,7 +11,7 @@ export function fieldConfig<
 	FieldWrapper = any,
 	CustomData = Record<string, any>,
 >(config: FieldConfig<AdditionalRenderable, FieldTypes, FieldWrapper, CustomData>) {
-	const refinementFunction = () => { };
+	const refinementFunction = () => {};
 
 	refinementFunction[ZOD_FIELD_CONFIG_SYMBOL] = config;
 

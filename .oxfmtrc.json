@@ -1,0 +1,29 @@
+{
+	"$schema": "./node_modules/oxfmt/configuration_schema.json",
+	"useTabs": true,
+	"singleQuote": false,
+	"endOfLine": "lf",
+	"insertFinalNewline": true,
+	"printWidth": 100,
+	"singleAttributePerLine": true,
+	"bracketSameLine": false,
+	"objectWrap": "preserve",
+	"ignorePatterns": [
+		"**/node_modules/**",
+		"**/dist/**",
+		"**/.next/**",
+		"**/.turbo/**",
+		"**/dev-dist/**",
+		"**/src-tauri/**",
+		"**/.nuxt/**",
+		"**/.expo/**",
+		"**/.wrangler/**",
+		"**/.alchemy/**",
+		"**/.source/**",
+		"**/routeTree.gen.ts",
+		"bts.jsonc",
+		"wrangler.jsonc",
+		"bun.lock"
+	],
+	"experimentalSortPackageJson": true
+}
