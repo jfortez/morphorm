@@ -35,8 +35,8 @@ jobs:
       - name: Install Dependencies
         run: bun install
 
-      # - name: Run Tests
-      # run: bun run --filter=morphorm test:run
+      - name: Run Tests
+        run: bun test
 
       - name: Build Package
         run: bun run build --filter=morphorm

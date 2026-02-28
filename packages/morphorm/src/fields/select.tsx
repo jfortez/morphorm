@@ -13,6 +13,7 @@ export const SelectField = ({ options, ...props }: FieldProps<SelectProps>) => {
 			{...props}
 			className="forma-select"
 			name={field.name}
+			data-testid={`select-${field.name}`}
 			value={field.state.value}
 			onChange={(e) => field.handleChange(e.target.value)}
 			onBlur={field.handleBlur}

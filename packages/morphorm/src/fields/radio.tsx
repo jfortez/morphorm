@@ -9,7 +9,10 @@ export interface RadioProps {
 export const RadioField = ({ options, ...props }: FieldProps<RadioProps>) => {
 	const field = useFieldContext<string>();
 	return (
-		<div className="forma-radio-group">
+		<div
+			className="forma-radio-group"
+			data-testid={`radio-${field.name}`}
+		>
 			{options.map((option) => (
 				<label
 					key={option.value}

@@ -132,9 +132,11 @@ const FormField = <
 	}, [dynamicKeys, _metadata, fieldValues, context]);
 
 	const fieldElement = (
-		<FieldPrimitive>
-			{metadata.label && <FieldLabel>{metadata.label}</FieldLabel>}
-			<FieldControl>
+		<FieldPrimitive data-testid={`field-${metadata.name}`}>
+			{metadata.label && (
+				<FieldLabel data-testid={`label-${metadata.name}`}>{metadata.label}</FieldLabel>
+			)}
+			<FieldControl data-testid={`control-${metadata.name}`}>
 				{metadata.element ? (
 					metadata.element
 				) : (
@@ -147,8 +149,12 @@ const FormField = <
 					/>
 				)}
 			</FieldControl>
-			{metadata.description && <FieldDescription>{metadata.description}</FieldDescription>}
-			<FieldError />
+			{metadata.description && (
+				<FieldDescription data-testid={`description-${metadata.name}`}>
+					{metadata.description}
+				</FieldDescription>
+			)}
+			<FieldError data-testid={`error-${metadata.name}`} />
 		</FieldPrimitive>
 	);
 

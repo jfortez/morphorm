@@ -11,7 +11,7 @@ const formSchema = z.object({
 });
 
 export const FormWithArray = () => (
-	<div>
+	<div data-testid="form-array-container">
 		<Forma<typeof formSchema>
 			schema={formSchema}
 			fields={[
@@ -29,7 +29,6 @@ export const FormWithArray = () => (
 					name: "fullName",
 					size: 12,
 					type: "text",
-
 					watch: ["firstName", "lastName"],
 					disabled: ({ fieldValues }) => !fieldValues.firstName && !fieldValues.lastName,
 				},
@@ -39,7 +38,7 @@ export const FormWithArray = () => (
 );
 
 export const FormWithFunction = () => (
-	<div>
+	<div data-testid="form-function-container">
 		<Forma<typeof formSchema>
 			schema={formSchema}
 			fields={(autoFields) => {
@@ -54,7 +53,7 @@ export const FormWithFunction = () => (
 );
 
 export const FormWithObject = () => (
-	<div>
+	<div data-testid="form-object-container">
 		<Forma<typeof formSchema>
 			schema={formSchema}
 			fields={{
@@ -72,7 +71,7 @@ export const FormWithObject = () => (
 );
 
 export const FormWithContext = () => (
-	<div>
+	<div data-testid="form-context-container">
 		<Forma
 			schema={formSchema}
 			context={{ userId: "123", isAdmin: true }}
@@ -96,7 +95,7 @@ export const FormWithContext = () => (
 );
 
 export const FormWithObjectFunction = () => (
-	<div>
+	<div data-testid="form-object-function-container">
 		<Forma<typeof formSchema>
 			schema={formSchema}
 			fields={{

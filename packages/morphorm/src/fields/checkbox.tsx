@@ -10,6 +10,7 @@ export const CheckboxField = ({ ...props }: FieldProps) => {
 			className="forma-checkbox"
 			{...props}
 			name={field.name}
+			data-testid={`checkbox-${field.name}`}
 			checked={field.state.value}
 			onChange={(e) => field.handleChange(e.target.checked)}
 			onBlur={field.handleBlur}

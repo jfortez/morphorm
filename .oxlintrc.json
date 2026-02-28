@@ -26,7 +26,8 @@
 		"jsx-props-no-spreading": "off",
 		"react-in-jsx-scope": "off",
 		"arrow-body-style": "off",
-		"sort-keys": "off"
+		"sort-keys": "off",
+		"no-nested-ternary": "off"
 	},
 	"env": {
 		"builtin": true,

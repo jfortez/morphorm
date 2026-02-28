@@ -10,6 +10,7 @@ export const NumberField = ({ ...props }: FieldProps) => {
 			className="forma-input"
 			{...props}
 			name={field.name}
+			data-testid={`number-${field.name}`}
 			value={field.state.value}
 			onChange={(e) => {
 				const value = e.target.value === "" ? "" : Number(e.target.value);

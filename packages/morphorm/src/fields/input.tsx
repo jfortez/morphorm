@@ -10,6 +10,7 @@ export const InputField = ({ ...props }: FieldProps) => {
 			className="forma-input"
 			{...props}
 			name={field.name}
+			data-testid={`input-${field.name}`}
 			value={field.state.value}
 			onChange={(e) => field.handleChange(e.target.value)}
 			onBlur={field.handleBlur}

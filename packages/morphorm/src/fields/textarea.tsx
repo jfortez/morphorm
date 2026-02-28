@@ -9,6 +9,7 @@ export const TextAreaField = ({ ...props }: FieldProps) => {
 			className="forma-textarea"
 			{...props}
 			name={field.name}
+			data-testid={`textarea-${field.name}`}
 			value={field.state.value}
 			onChange={(e) => field.handleChange(e.target.value)}
 			onBlur={field.handleBlur}
