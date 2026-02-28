@@ -1,6 +1,6 @@
 // oxlint-disable typescript/no-explicit-any
 import type { z } from "zod";
-import type { ParsedField } from '@forma/core/types'
+import type { ParsedField } from '@morphorm/core/types'
 
 import type {
 	Components,

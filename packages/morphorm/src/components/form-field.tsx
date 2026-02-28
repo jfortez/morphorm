@@ -59,8 +59,6 @@ interface FormInputProps<
   metadata: FormFieldType<C, Z, Context>;
   context?: Context;
   fieldValues?: Record<string, unknown>;
-  addonIcon?: React.ReactNode;
-  showAddonIcon?: boolean;
 }
 
 const FormField = <
@@ -71,8 +69,6 @@ const FormField = <
   metadata: _metadata,
   context,
   fieldValues,
-  addonIcon: _addonIcon,
-  showAddonIcon = true,
 }: FormInputProps<C, Z, Context>) => {
   const dynamicKeys = useMemo(() => {
     const keys = Object.keys(_metadata) as (keyof typeof _metadata)[];
@@ -133,6 +129,7 @@ const FormField = <
     return { ...staticProps, ...computedDynamic } as any;
   }, [dynamicKeys, _metadata, fieldValues, context]);
 
+
   const fieldElement = (
     <FieldPrimitive>
       {metadata.label && <FieldLabel>{metadata.label}</FieldLabel>}
@@ -141,8 +138,8 @@ const FormField = <
           metadata.element
         ) : (
           <Field
+            name={metadata.name}
             inputType={metadata.type as FieldType<C>}
-            showAddonIcon={showAddonIcon}
             {...metadata.fieldProps}
             placeholder={metadata.placeholder}
             disabled={metadata.disabled}

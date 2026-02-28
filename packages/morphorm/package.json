@@ -1,6 +1,6 @@
 {
   "name": "morphorm",
-  "version": "0.0.1",
+  "version": "0.1.1",
   "description": "Lightweight form library built with React and TanStack Form",
   "type": "module",
     "author": {
@@ -26,8 +26,7 @@
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
       }
-    },
-    "./style.css": "./dist/index.css"
+    }
   },
   "files": [
     "dist",

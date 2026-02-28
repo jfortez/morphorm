@@ -19,8 +19,9 @@ import FormField from "./form-field";
 import { useAppForm } from "./form-hook";
 import { SubmitButton } from "./subtmit";
 import { generateGrid, parseFields } from "../util";
-import { ZodProvider } from "@forma/core/zod";
+import { ZodProvider } from "@morphorm/core/zod";
 import { PlusIcon, TrashIcon } from "./ui/icons";
+import './index.css'
 
 export interface FormState {
   canSubmit: boolean;
@@ -115,7 +116,7 @@ const getLabelString = (label: unknown): string => {
 };
 
 const ContextAwareField = ({ col, mode }: ContextAwareFieldProps) => {
-  const form = useFormContext();
+	const form = useFormContext() as unknown as ReturnType<typeof useAppForm>;
   const { context } = useFormKit();
   const prevSlicedContextRef = useRef<any>(null);
 
@@ -228,7 +229,7 @@ const ContextAwareField = ({ col, mode }: ContextAwareFieldProps) => {
   }
 
   return (
-    <form.Field name={col.name as never}>
+    <form.AppField name={col.name as never}>
       {() => (
           <FormField
             metadata={col as unknown as any}
@@ -236,7 +237,7 @@ const ContextAwareField = ({ col, mode }: ContextAwareFieldProps) => {
             fieldValues={watchedValues}
           />
         )}
-    </form.Field>
+    </form.AppField>
   );
 };
 

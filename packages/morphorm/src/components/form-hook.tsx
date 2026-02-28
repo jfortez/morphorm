@@ -1,24 +1,14 @@
 import { createFormHook } from "@tanstack/react-form";
 
 import {
-  Field,
-  FieldControl,
-  FieldDescription,
-  FieldError,
-  FieldLabel,
-  fieldContext,
-  formContext,
+
+	fieldContext,
+	formContext,
 } from "./ui/form";
 
-export const { useAppForm, withForm, withFieldGroup } = createFormHook({
-  fieldComponents: {
-    Field: Field,
-    Label: FieldLabel,
-    Control: FieldControl,
-    Description: FieldDescription,
-    Error: FieldError,
-  },
-  fieldContext,
-  formComponents: {},
-  formContext,
+export const { useAppForm, withForm, withFieldGroup, } = createFormHook({
+	fieldComponents:{},
+	fieldContext,
+	formComponents: {},
+	formContext,
 });

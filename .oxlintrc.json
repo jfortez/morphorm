@@ -22,6 +22,8 @@
     "no-magic-numbers": "off",
     "jsx-max-depth": "off",
     "no-ternary": "off",
+    "func-style": "off",
+    "jsx-props-no-spreading": "off",
   },
   "env": {
     "builtin": true,

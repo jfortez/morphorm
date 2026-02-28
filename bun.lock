@@ -55,7 +55,7 @@
     },
     "packages/morphorm": {
       "name": "morphorm",
-      "version": "0.0.1",
+      "version": "0.1.1",
       "dependencies": {
         "@morphorm/core": "workspace:*",
         "@radix-ui/react-slot": "^1.2.4",
