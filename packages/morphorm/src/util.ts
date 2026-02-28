@@ -14,17 +14,20 @@ import type {
 	SpacerType,
 } from "./types";
 
-type _FieldWithoutType<Z extends z.ZodObject<any>> = Omit<
-	Exclude<FormaField<Z, NonNullable<unknown>>, SpacerType>,
-	"type"
->;
-
-export type InternalField<Z extends z.ZodObject<any> = z.ZodObject<any>> = _FieldWithoutType<Z> & {
+export type InternalField<Z extends z.ZodObject<any> = z.ZodObject<any>> = {
+	name: string;
+	label?: string | React.ReactNode;
+	element?: React.ReactNode;
 	type: string;
 	mode: "value" | "array";
 	schema: ParsedField[];
+	size?: Sizes;
 	watch?: string[];
 	watchContext?: string[];
+	placeholder?: string | ((args: { fieldValues: z.infer<Z>; context: any }) => string);
+	description?: string | ((args: { fieldValues: z.infer<Z>; context: any }) => string);
+	disabled?: boolean | ((args: { fieldValues: z.infer<Z>; context: any }) => boolean);
+	overrides?: (originalElement: React.JSX.Element, meta: any) => React.ReactNode;
 };
 
 export function generateGrid<Z extends z.ZodObject<any>>(

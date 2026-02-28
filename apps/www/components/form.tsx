@@ -1,111 +1,117 @@
 "use client";
-import { Forma, type FieldsConfig } from "morphorm";
+import { Forma } from "morphorm";
 import * as z from "zod";
 
 const formSchema = z.object({
+	firstName: z.string(),
+	lastName: z.string(),
 	age: z.number(),
-	name: z.string(),
-	email: z.string(),
+	isActive: z.boolean(),
+	fullName: z.string(),
 });
 
-interface FormContext {
-	userId: string;
-	isAdmin: boolean;
-}
-
-// Test 1: Array mode - name typed as keyof schema ("age" | "email" | "name")
 export const FormWithArray = () => (
 	<div>
-		<Forma
+		<Forma<typeof formSchema>
 			schema={formSchema}
 			fields={[
 				{
-					label: "age",
-					name: "age",
-					placeholder: "age",
+					name: "firstName",
 					size: 6,
 					type: "text",
 				},
 				{
-					label: "name",
-					name: "name",
-					placeholder: "name",
+					name: "lastName",
 					size: 6,
 					type: "text",
+				},
+				{
+					name: "fullName",
+					size: 12,
+					type: "text",
+
+					watch: ["firstName", "lastName"],
+					disabled: ({ fieldValues }) => !fieldValues.firstName && !fieldValues.lastName,
 				},
 			]}
 		/>
 	</div>
 );
 
-// Test 2: Function mode - field.type is FieldType ("text" | "number" | "checkbox" | ...)
 export const FormWithFunction = () => (
 	<div>
-		<Forma
+		<Forma<typeof formSchema>
 			schema={formSchema}
 			fields={(autoFields) => {
 				return autoFields.map((field) => ({
 					...field,
 					size: 4,
-					type: field.type,
+					...(field.name === "fullName" ? { watch: ["firstName", "lastName"] } : {}),
 				}));
 			}}
 		/>
 	</div>
 );
 
-// Test 3: Object mode - partial transformations by field name
 export const FormWithObject = () => (
 	<div>
-		<Forma
+		<Forma<typeof formSchema>
 			schema={formSchema}
 			fields={{
-				name: { size: 6, label: "Full Name" },
-				email: { size: 6 },
-				age: (field) => ({ ...field, size: 12 }),
+				firstName: { size: 6, type: "text" },
+				lastName: { size: 6, type: "text" },
+				fullName: {
+					size: 12,
+					type: "text",
+					watch: ["firstName", "lastName"],
+					disabled: ({ fieldValues }) => !fieldValues.firstName,
+				},
 			}}
 		/>
 	</div>
 );
 
-// Test 4: With Context - use explicit generic parameters for proper type inference
-// The order of generics is: Schema, Components, Context
 export const FormWithContext = () => (
 	<div>
 		<Forma
 			schema={formSchema}
 			context={{ userId: "123", isAdmin: true }}
-			fields={(autoFields) => {
-				return autoFields.map((field) => ({
-					...field,
+			fields={[
+				{
+					name: "isActive",
+					type: "checkbox",
 					size: 6,
-
+				},
+				{
+					name: "age",
+					type: "number",
+					size: 6,
+					watch: ["isActive"],
 					disabled: ({ context }) => !context.isAdmin,
-
-					watchContext: ["userId"],
-				}));
-			}}
+					watchContext: ["isAdmin"],
+				},
+			]}
 		/>
 	</div>
 );
 
-// Alternative: Pre-define fields configuration with explicit types
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const fieldsConfig: FieldsConfig<typeof formSchema, any, FormContext> = (autoFields) => {
-	return autoFields.map((field) => ({
-		...field,
-		size: 6,
-		disabled: ({ context }) => !context.isAdmin,
-		watchContext: ["userId"],
-	}));
-};
-
-export const FormWithPreDefinedFields = () => (
+export const FormWithObjectFunction = () => (
 	<div>
-		<Forma
+		<Forma<typeof formSchema>
 			schema={formSchema}
-			context={{ userId: "123", isAdmin: true }}
-			fields={fieldsConfig}
+			fields={{
+				firstName: { size: 6, type: "text" },
+				lastName: (field) => ({
+					...field,
+					size: 6,
+				}),
+				fullName: {
+					size: 12,
+					type: "text",
+					watch: ["firstName", "lastName"],
+					disabled: ({ fieldValues }) => !fieldValues.firstName || !fieldValues.lastName,
+				},
+			}}
 		/>
 	</div>
 );
