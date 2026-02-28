@@ -1,8 +1,18 @@
 {
-  "name": "forma",
-  "version": "0.1.0",
+  "name": "morphorm",
+  "version": "0.0.1",
   "description": "Lightweight form library built with React and TanStack Form",
   "type": "module",
+    "author": {
+    "name": "Jean Caiza",
+    "email": "jeanmcm@hotmail.com",
+    "url": "https://github.com/jfortez"
+  },
+  "repository": {
+    "type": "git ",
+    "url": "git+https://github.com/jfortez/morphorm.git"
+  },
+  
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -20,7 +30,8 @@
     "./style.css": "./dist/index.css"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "scripts": {
     "build": "tsdown",
@@ -31,7 +42,7 @@
     "lint:fix": "oxlint --fix"
   },
   "dependencies": {
-    "@forma/core": "workspace:*",
+    "@morphorm/core": "workspace:*",
     "@tanstack/react-form": "^1.28.3",
     "@radix-ui/react-slot": "^1.2.4"
   },

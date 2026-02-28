@@ -1,9 +1,10 @@
 {
-  "name": "@forma/core",
+  "name": "@morphorm/core",
   "version": "0.1.0",
   "type": "module",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
+  "private": true,
   "exports": {
     ".": {
       "import": {
@@ -51,7 +52,6 @@
     "check-types": "tsc --noEmit",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix"
-
   },
   "devDependencies": {
     "@types/bun": "latest",

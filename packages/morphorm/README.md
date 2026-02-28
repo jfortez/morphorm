@@ -1,4 +1,4 @@
-# Forma
+# Morphorm
 
 A powerful, type-safe form component library built on top of TanStack Form with Zod validation.
 
@@ -25,7 +25,7 @@ bun install
 ## Quick Start
 
 ```tsx
-import { FormKit } from "@/components/form-kit";
+import { Forma } from "morphorm";
 import { z } from "zod";
 
 const schema = z.object({
@@ -36,7 +36,7 @@ const schema = z.object({
 
 function MyForm() {
   return (
-    <FormKit
+    <Forma
       schema={schema}
       onSubmit={async (values) => {
         console.log("Submitted:", values);
@@ -52,7 +52,7 @@ function MyForm() {
 ### Basic Fields
 
 ```tsx
-<FormKit
+<Forma
   schema={schema}
   fields={[
     {
@@ -112,7 +112,7 @@ function MyForm() {
   };
 
   return (
-    <FormKit
+    <Forma
       schema={schema}
       context={context}
       fields={[
@@ -147,7 +147,7 @@ const citiesByState: Record<string, string[]> = {
   newyork: ["New York City", "Buffalo"],
 };
 
-<FormKit
+<Forma
   schema={schema}
   fields={[
     {
@@ -269,7 +269,7 @@ Wrap the field with custom UI:
 Customize the rendering of entire rows:
 
 ```tsx
-<FormKit
+<Forma
   schema={schema}
   fields={[
     { name: "name", type: "text", label: "Name", size: 6 },
@@ -290,7 +290,7 @@ Customize the rendering of entire rows:
 Add content after the field rows:
 
 ```tsx
-<FormKit
+<Forma
   schema={schema}
   fields={[...]}
   rowChildren={
@@ -315,7 +315,7 @@ const schema = z.object({
   ),
 });
 
-<FormKit
+<Forma
   schema={schema}
   // Array fields are automatically rendered with collapsible sections
   // Add/remove buttons are provided automatically
@@ -324,7 +324,7 @@ const schema = z.object({
 
 ## Custom Components
 
-Extend FormKit with custom field components:
+Extend Forma with custom field components:
 
 ```tsx
 const CustomInput = (props) => <input {...props} className="custom-input" />;
@@ -339,7 +339,7 @@ const CustomSelect = ({ items, value, onChange, ...props }) => (
   </select>
 );
 
-<FormKit
+<Forma
   schema={schema}
   components={{
     text: CustomInput,
@@ -353,7 +353,7 @@ const CustomSelect = ({ items, value, onChange, ...props }) => (
 Monitor form state changes:
 
 ```tsx
-<FormKit
+<Forma
   schema={schema}
   onStateChange={(state) => {
     console.log("Can submit:", state.canSubmit);
@@ -368,7 +368,7 @@ Monitor form state changes:
 Populate form with existing data:
 
 ```tsx
-<FormKit
+<Forma
   schema={schema}
   initialValues={{
     name: "John Doe",
@@ -380,7 +380,7 @@ Populate form with existing data:
 
 ## Validation
 
-FormKit uses Zod for validation. Errors are automatically displayed:
+Forma uses Zod for validation. Errors are automatically displayed:
 
 ```tsx
 const schema = z.object({
@@ -391,7 +391,7 @@ const schema = z.object({
 
 ## Props Reference
 
-### FormKit Props
+### Forma Props
 
 | Prop               | Type                                    | Description               |
 | ------------------ | --------------------------------------- | ------------------------- |
@@ -461,7 +461,7 @@ Functions receive an args object with:
 Run tests:
 
 ```bash
-bun test formkit.test.tsx
+bun test Forma.test.tsx
 ```
 
 ## Examples

@@ -1,5 +1,5 @@
 "use client";
-import {Forma} from "forma";
+import {Forma} from "morphorm";
 import * as z from 'zod'
 
 const formSchema = z.object({

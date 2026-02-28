@@ -20,7 +20,7 @@ import { useAppForm } from "./form-hook";
 import { SubmitButton } from "./subtmit";
 import { generateGrid, parseFields } from "../util";
 import { ZodProvider } from "@forma/core/zod";
-import { PlusIcon, TrashIcon } from "../components/ui/icons";
+import { PlusIcon, TrashIcon } from "./ui/icons";
 
 export interface FormState {
   canSubmit: boolean;

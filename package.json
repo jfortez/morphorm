@@ -1,19 +1,32 @@
 {
-  "name": "forma-workspace",
+  "name": "morphorm-workspace",
   "private": true,
+  "author": {
+    "name": "Jean Caiza",
+    "email": "jeanmcm@hotmail.com",
+    "url": "https://github.com/jfortez"
+  },
+  "repository": {
+    "type": "git ",
+    "url": "git+https://github.com/jfortez/morphorm.git"
+  },
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint:fix",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "build:forma": "turbo run build --filter=forma",
+    "build:pkg": "turbo run build --filter=morphorm",
     "test": "turbo run test",
     "check-types": "turbo run check-types",
-    "release": "turbo run build --filter=overkit && changeset publish",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "bun run build:pkg && changeset publish",
     "prepare": "husky"
   },
   "devDependencies": {
+    "@changesets/changelog-github": "^0.5.2",
+    "@changesets/cli": "^2.29.8",
     "@happy-dom/global-registrator": "^20.7.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -33,7 +46,7 @@
     "packages/*"
   ],
   "lint-staged": {
-    "*.{js,jsx,ts,tsx,mjs,cjs}": "bun run lint"
+    "*.{js,jsx,ts,tsx,mjs,cjs}": "oxlint"
   },
   "dependencies": {
     "zod": "^4.3.6"

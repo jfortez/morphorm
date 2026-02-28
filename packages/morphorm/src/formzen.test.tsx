@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
-import { Forma } from "./components/forma";
+import { Forma } from "./components/morphorm";
 import * as z from "zod";
 
 const basicSchema = z.object({
