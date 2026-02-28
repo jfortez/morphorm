@@ -1,14 +1,25 @@
 {
-  "name": "forma",
+  "name": "forma-workspace",
   "private": true,
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "check-types": "turbo run check-types"
+    "build:forma": "turbo run build --filter=forma",
+    "test": "turbo run test",
+    "check-types": "turbo run check-types",
+    "release": "turbo run build --filter=overkit && changeset publish",
+    "prepare": "husky"
   },
   "devDependencies": {
+    "@happy-dom/global-registrator": "^20.7.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.3.0",
+    "oxlint": "^1.50.0",
     "prettier": "^3.7.4",
     "turbo": "^2.8.12",
     "typescript": "5.9.2"
@@ -20,5 +31,11 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,mjs,cjs}": "bun run lint"
+  },
+  "dependencies": {
+    "zod": "^4.3.6"
+  }
 }
