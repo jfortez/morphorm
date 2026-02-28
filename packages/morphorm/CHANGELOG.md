@@ -1,5 +1,11 @@
 # Morphorm
 
+## 0.1.4
+
+### Patch Changes
+
+- 82c4112: remove `fieldTransformer` use `fields` instead
+
 ## 0.1.3
 
 ### Patch Changes
