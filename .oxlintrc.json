@@ -1,44 +1,46 @@
 {
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript",],
-  "categories": {
-    "correctness": "error",
-    "suspicious": "warn",
-    "pedantic": "off",
-    "perf": "warn",
-    "style": "warn",
-    "restriction": "off"
-  },
-  "settings": {
-    "react": {
-      "version": "19.2.4"
-    }
-  },
-    "rules": {
-    "sort-imports": "off",
-    "no-duplicate-imports": "off",
-    "id-length": "off",
-    "max-statements": "off",
-    "no-magic-numbers": "off",
-    "jsx-max-depth": "off",
-    "no-ternary": "off",
-    "func-style": "off",
-    "jsx-props-no-spreading": "off",
-    "react-in-jsx-scope": "off",
-  },
-  "env": {
-    "builtin": true,
-    "es2022": true,
-    "browser": true,
-    "node": true,
-    "jest": true
-  },
-  "globals": {},
-  "ignorePatterns": [
-    "**/node_modules/**",
-    "**/dist/**",
-    "**/*.d.ts",
-    "**/*.config.{js,ts}",
-    "**/coverage/**"
-  ]
+	"$schema": "./node_modules/oxlint/configuration_schema.json",
+	"plugins": ["react", "typescript"],
+	"categories": {
+		"correctness": "error",
+		"suspicious": "warn",
+		"pedantic": "off",
+		"perf": "warn",
+		"style": "warn",
+		"restriction": "off"
+	},
+	"settings": {
+		"react": {
+			"version": "19.2.4"
+		}
+	},
+	"rules": {
+		"sort-imports": "off",
+		"no-duplicate-imports": "off",
+		"id-length": "off",
+		"max-statements": "off",
+		"no-magic-numbers": "off",
+		"jsx-max-depth": "off",
+		"no-ternary": "off",
+		"func-style": "off",
+		"jsx-props-no-spreading": "off",
+		"react-in-jsx-scope": "off",
+		"arrow-body-style": "off",
+		"sort-keys": "off"
+	},
+	"env": {
+		"builtin": true,
+		"es2022": true,
+		"browser": true,
+		"node": true,
+		"jest": true
+	},
+	"globals": {},
+	"ignorePatterns": [
+		"**/node_modules/**",
+		"**/dist/**",
+		"**/*.d.ts",
+		"**/*.config.{js,ts}",
+		"**/coverage/**"
+	]
 }

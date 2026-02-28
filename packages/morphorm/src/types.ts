@@ -1,6 +1,7 @@
 // oxlint-disable typescript/no-explicit-any
 import type { z } from "zod";
 
+import type { FieldType } from "./fields";
 import type { FormFieldType } from "./components/form-field";
 
 export type Components = Record<string, React.ComponentType<any>>;
@@ -26,7 +27,7 @@ export interface BaseField<Z extends z.ZodObject<any> = z.ZodObject<any>, Contex
 	placeholder?: ValueOrFunction<string, FnArgs<Z, Context>>;
 	description?: ValueOrFunction<string, FnArgs<Z, Context>>;
 	disabled?: ValueOrFunction<boolean, FnArgs<Z, Context>>;
-	watchContext?: string[];
+	watchContext?: Context extends Record<string, any> ? (keyof Context)[] : string[];
 }
 
 export type FormaField<
@@ -52,25 +53,60 @@ export type FormSubmitHandler<Z extends z.ZodObject<any>> = (
 	values: z.infer<Z>,
 ) => MaybePromise<void>;
 
-type _TransformField<C extends Components = NonNullable<unknown>> = FormFieldType<C> & {
+export interface AutoField<C extends Components = NonNullable<unknown>> {
+	name: string;
+	type: FieldType<C>;
+	label?: string;
 	size?: Sizes;
-};
+}
 
-type FieldTransformFunction<Z extends z.ZodObject<any>, C extends Components> = (
-	field: Exclude<FormaField<Z, C>, SpacerType>,
-) => Partial<_TransformField<C>> | undefined;
-
-type FieldTransformObject<
+export type TransformedField<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
 	C extends Components = NonNullable<unknown>,
+	Context = any,
+> = AutoField<C> &
+	Partial<
+		Omit<BaseField<Z, Context> & Omit<FormFieldType<C, Z, Context>, "name" | "type">, "name">
+	> & {
+		name: string;
+		type?: FieldType<C>;
+	};
+
+export type FieldTransformFunction<
+	Z extends z.ZodObject<any> = z.ZodObject<any>,
+	C extends Components = NonNullable<unknown>,
+	Context = any,
+> = (fields: AutoField<C>[]) => TransformedField<Z, C, Context>[];
+
+export type FieldTransformValue<
+	Z extends z.ZodObject<any> = z.ZodObject<any>,
+	C extends Components = NonNullable<unknown>,
+	Context = any,
+> =
+	| Partial<AutoField<C>>
+	| ((field: AutoField<C>) => Partial<TransformedField<Z, C, Context>> | undefined);
+
+export type FieldTransformObject<
+	Z extends z.ZodObject<any> = z.ZodObject<any>,
+	C extends Components = NonNullable<unknown>,
+	Context = any,
 > = Partial<{
-	[K in keyof z.infer<Z>]: Partial<_TransformField<C>> | FieldTransformFunction<Z, C>;
+	[K in keyof z.infer<Z>]: FieldTransformValue<Z, C, Context>;
 }>;
 
 export type FieldTransformer<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
 	C extends Components = NonNullable<unknown>,
 > = FieldTransformObject<Z, C> | FieldTransformFunction<Z, C>;
+
+export type FieldsConfig<
+	Z extends z.ZodObject<any> = z.ZodObject<any>,
+	C extends Components = NonNullable<unknown>,
+	Context = any,
+> =
+	| FormaField<Z, C, Context>[]
+	| FieldTransformFunction<Z, C, Context>
+	| FieldTransformObject<Z, C, Context>;
 
 export interface Option {
 	id: string | number;

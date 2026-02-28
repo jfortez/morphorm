@@ -8,7 +8,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collap
 
 import type { SubmitProps } from "./subtmit";
 import type { RowOverrides } from "../types";
-import type { Components, FieldTransformer, FormSubmitHandler, FormaField } from "../types";
+import type { Components, FieldsConfig, FormSubmitHandler, FormaField } from "../types";
 import type { InternalField } from "../util";
 
 import { Button } from "./ui/button";
@@ -32,8 +32,7 @@ export interface FormState {
 interface FormProps<Z extends z.ZodObject<any>, C extends Components, Context = any> {
 	schema: Z;
 	initialValues?: z.input<Z>;
-	fields?: FormaField<Z, C, Context>[];
-	fieldTransformer?: FieldTransformer<Z, C>;
+	fields?: FieldsConfig<Z, C, Context>;
 	onSubmit?: FormSubmitHandler<Z>;
 	onCancel?: () => void;
 	onStateChange?: (state: FormState) => void;
@@ -322,18 +321,17 @@ const RenderGrid = memo(({ parsedFields, rowOverrides, rowChildren }: RenderGrid
 export const Forma = <
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
 	C extends Components = NonNullable<unknown>,
-	Context = any,
+	Context = undefined,
 >(
 	props: FormProps<Z, C, Context>,
 ) => {
 	const {
 		schema,
 		initialValues,
-		fields = [],
+		fields = undefined,
 		onSubmit,
 		onCancel,
 		onStateChange,
-		fieldTransformer,
 		showSubmit = false,
 		components = {},
 		context,
@@ -347,12 +345,8 @@ export const Forma = <
 	const parsedFields = useMemo(() => {
 		const parsed = schemaProvider.parseSchema();
 
-		return parseFields(
-			fields as FormaField<z.ZodObject<any>, Components>[],
-			parsed.fields,
-			fieldTransformer as never,
-		);
-	}, [schemaProvider, fields, fieldTransformer]);
+		return parseFields(fields, parsed.fields);
+	}, [schemaProvider, fields]);
 
 	const defaultValues = useMemo<z.input<Z>>(() => {
 		if (initialValues) {

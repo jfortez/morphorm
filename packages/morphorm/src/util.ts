@@ -2,7 +2,17 @@
 import type { z } from "zod";
 import type { ParsedField } from "@morphorm/core/types";
 
-import type { Components, FormaField, FieldTransformer, Sizes, SpacerType } from "./types";
+import type { FieldType } from "./fields";
+import type {
+	AutoField,
+	Components,
+	FieldTransformFunction,
+	FieldTransformObject,
+	FieldsConfig,
+	FormaField,
+	Sizes,
+	SpacerType,
+} from "./types";
 
 type _FieldWithoutType<Z extends z.ZodObject<any>> = Omit<
 	Exclude<FormaField<Z, NonNullable<unknown>>, SpacerType>,
@@ -102,17 +112,17 @@ export function generateGrid<Z extends z.ZodObject<any>>(
 	return result;
 }
 
-const toBaseType = (type: string) => {
+const toBaseType = <C extends Components = NonNullable<unknown>>(type: string): FieldType<C> => {
 	if (type === "string") {
-		return "text";
+		return "text" as FieldType<C>;
 	}
 	if (type === "number") {
-		return "number";
+		return "number" as FieldType<C>;
 	}
 	if (type === "boolean") {
-		return "checkbox";
+		return "checkbox" as FieldType<C>;
 	}
-	return "text";
+	return "text" as FieldType<C>;
 };
 
 const camelToLabel = (str: string) => {
@@ -121,17 +131,52 @@ const camelToLabel = (str: string) => {
 	return capitalizedWords.join(" ");
 };
 
+function isFieldsArray<
+	Z extends z.ZodObject<any> = z.ZodObject<any>,
+	C extends Components = NonNullable<unknown>,
+	Context = any,
+>(fields: FieldsConfig<Z, C, Context>): fields is FormaField<Z, C, Context>[] {
+	return Array.isArray(fields);
+}
+
+function isFieldsFunction<
+	Z extends z.ZodObject<any> = z.ZodObject<any>,
+	C extends Components = NonNullable<unknown>,
+	Context = any,
+>(fields: FieldsConfig<Z, C, Context>): fields is FieldTransformFunction<Z, C, Context> {
+	return typeof fields === "function";
+}
+
+function isFieldsObject<
+	Z extends z.ZodObject<any> = z.ZodObject<any>,
+	C extends Components = NonNullable<unknown>,
+	Context = any,
+>(fields: FieldsConfig<Z, C, Context>): fields is FieldTransformObject<Z, C, Context> {
+	return typeof fields === "object" && !Array.isArray(fields);
+}
+
 export function parseFields<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
 	C extends Components = NonNullable<unknown>,
+	Context = any,
 >(
-	fields: FormaField<Z, C>[],
+	fields: FieldsConfig<Z, C, Context> | undefined,
 	schemaFields: ParsedField[],
-	fieldTransformer?: FieldTransformer<Z, C>,
 ): InternalField<Z>[] {
 	let defaultFields: InternalField<Z>[] = [];
 
-	if (!fields || fields.length === 0) {
+	const autoFields: AutoField<C>[] = (schemaFields as ParsedField[]).map((field) => {
+		const item: AutoField<C> = {
+			label: camelToLabel(field.key),
+			name: field.key,
+			size: 12,
+			type: toBaseType(field.type),
+		};
+
+		return item;
+	});
+
+	if (!fields) {
 		defaultFields = (schemaFields as ParsedField[]).map((field) => {
 			const item: InternalField<Z> = {
 				label: camelToLabel(field.key),
@@ -144,74 +189,85 @@ export function parseFields<
 
 			return item;
 		});
-	}
+	} else if (isFieldsFunction(fields)) {
+		const transformed = fields(autoFields);
 
-	const fieldMap = new Map<string, ParsedField>();
-
-	for (const field of schemaFields) {
-		fieldMap.set(field.key, field);
-	}
-
-	for (const field of fields) {
-		const _field: InternalField<Z> = {
-			...(field as any),
-			mode: "value",
-			schema: [] as ParsedField[],
-		};
-		if (_field.name && fieldMap.has(_field.name)) {
-			const _fieldSchema = fieldMap.get(_field.name)!;
-			_field.schema = _fieldSchema.schema!;
-			_field.mode = _fieldSchema.type === "array" ? "array" : "value";
-		}
-
-		defaultFields.push(_field);
-	}
-
-	const getTransformResult = (
-		field: InternalField<Z>,
-		transformer: FieldTransformer<Z, C>,
-	): InternalField<Z> => {
-		const { name } = field;
-
-		const privateValues = {
-			name,
-		};
-		if (typeof transformer === "function") {
-			const transformResult = transformer(field as any);
-			if (transformResult) {
+		defaultFields = transformed
+			.filter((field): field is Exclude<typeof field, SpacerType> => {
+				return (field as any).name !== undefined;
+			})
+			.map((field) => {
+				const schemaField = schemaFields.find((sf) => sf.key === field.name);
 				return {
 					...field,
-					...transformResult,
-					...privateValues,
-				} as unknown as InternalField<Z>;
+					mode: schemaField?.type === "array" ? "array" : "value",
+					schema: schemaField?.schema || ([] as ParsedField[]),
+				} as InternalField<Z>;
+			});
+	} else if (isFieldsObject(fields)) {
+		defaultFields = (schemaFields as ParsedField[]).map((field) => {
+			const baseField: InternalField<Z> = {
+				label: camelToLabel(field.key),
+				mode: field.type === "array" ? "array" : "value",
+				name: field.key,
+				schema: field.schema!,
+				size: 12,
+				type: toBaseType(field.type),
+			};
+
+			const transform = fields[field.key as keyof typeof fields];
+			if (transform) {
+				let transformResult: Partial<AutoField<C>> | undefined;
+
+				if (typeof transform === "function") {
+					transformResult = (
+						transform as (field: AutoField<C>) => Partial<AutoField<C>> | undefined
+					)(baseField as AutoField<C>);
+				} else {
+					transformResult = transform as Partial<AutoField<C>>;
+				}
+
+				if (transformResult) {
+					return {
+						...baseField,
+						...transformResult,
+						name: field.key,
+					} as InternalField<Z>;
+				}
 			}
-			return field as InternalField<Z>;
+
+			return baseField;
+		});
+	} else if (isFieldsArray(fields)) {
+		const fieldMap = new Map<string, ParsedField>();
+
+		for (const field of schemaFields) {
+			fieldMap.set(field.key, field);
 		}
-		if (typeof transformer === "object") {
-			const transformResult = transformer[name];
-			if (!transformResult) {
-				return field as InternalField<Z>;
+
+		for (const field of fields) {
+			const _field: InternalField<Z> = {
+				...(field as any),
+				mode: "value",
+				schema: [] as ParsedField[],
+			};
+			if (_field.name && fieldMap.has(_field.name)) {
+				const _fieldSchema = fieldMap.get(_field.name)!;
+				_field.schema = _fieldSchema.schema!;
+				_field.mode = _fieldSchema.type === "array" ? "array" : "value";
 			}
 
-			return {
-				...field,
-				...(typeof transformResult === "function"
-					? transformResult(field as any)
-					: transformResult),
-				...privateValues,
-			} as unknown as InternalField<Z>;
+			defaultFields.push(_field);
 		}
+	}
 
-		return field as InternalField<Z>;
-	};
+	return defaultFields;
+}
 
-	return defaultFields.map((field) => {
-		if (field.type === "fill") {
-			return field;
-		}
-		if (!fieldTransformer) {
-			return field;
-		}
-		return getTransformResult(field, fieldTransformer);
-	});
+export function defineFields<Z extends z.ZodObject<any>, Context = undefined>(config: {
+	schema: Z;
+	fields: FieldsConfig<Z, {}, Context>;
+	context?: Context;
+}) {
+	return config.fields;
 }
