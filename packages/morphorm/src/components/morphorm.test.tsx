@@ -1157,4 +1157,89 @@ describe("FormKit", () => {
 			expect(checkboxes.length).toBeGreaterThanOrEqual(1);
 		});
 	});
+
+	describe("Array Fields", () => {
+		it("renders array field with only schema", () => {
+			const schema = z.object({
+				contacts: z.array(
+					z.object({
+						name: z.string(),
+						email: z.string().email(),
+					}),
+				),
+			});
+
+			render(
+				<Forma
+					schema={schema}
+					onSubmit={mockSubmit}
+					showSubmit
+				/>,
+			);
+
+			expect(screen.getByText(/no items/i)).toBeInTheDocument();
+			expect(screen.getByText(/add/i)).toBeInTheDocument();
+		});
+
+		it("renders array field with initial values", () => {
+			const schema = z.object({
+				products: z.array(
+					z.object({
+						name: z.string(),
+						price: z.number(),
+					}),
+				),
+			});
+
+			render(
+				<Forma
+					schema={schema}
+					initialValues={{
+						products: [{ name: "Widget", price: 29.99 }],
+					}}
+					onSubmit={mockSubmit}
+					showSubmit
+				/>,
+			);
+
+			expect(screen.queryByText(/no items/i)).not.toBeInTheDocument();
+			expect(screen.getByTestId("input-products[0].name")).toBeInTheDocument();
+			expect(screen.getByTestId("input-products[0].price")).toBeInTheDocument();
+			expect(screen.getByTestId("number-products[0].price")).toHaveTextContent("29.99");
+			expect(screen.getByTestId("input-products[0].name")).toHaveValue("Widget");
+			expect(screen.getByText(/add/i)).toBeInTheDocument();
+		});
+
+		it("renders array field with custom fields configuration", () => {
+			const schema = z.object({
+				todos: z.array(
+					z.object({
+						title: z.string(),
+						completed: z.boolean(),
+					}),
+				),
+			});
+
+			render(
+				<Forma
+					schema={schema}
+					fields={[
+						{
+							name: "todos.title",
+							type: "text",
+						},
+						{
+							name: "todos.completed",
+							type: "checkbox",
+						},
+					]}
+					onSubmit={mockSubmit}
+					showSubmit
+				/>,
+			);
+
+			expect(screen.getByText(/no items/i)).toBeInTheDocument();
+			expect(screen.getByText(/add/i)).toBeInTheDocument();
+		});
+	});
 });

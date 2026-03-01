@@ -24,6 +24,7 @@ export type InternalField<Z extends z.ZodObject<any> = z.ZodObject<any>> = {
 	size?: Sizes;
 	watch?: string[];
 	watchContext?: string[];
+	arrayPath?: string;
 	placeholder?: string | ((args: { fieldValues: z.infer<Z>; context: any }) => string);
 	description?: string | ((args: { fieldValues: z.infer<Z>; context: any }) => string);
 	disabled?: boolean | ((args: { fieldValues: z.infer<Z>; context: any }) => boolean);
@@ -134,6 +135,17 @@ const camelToLabel = (str: string) => {
 	return capitalizedWords.join(" ");
 };
 
+const parseNestedPath = (name: string): { parentKey: string | null; childKey: string | null } => {
+	const parts = name.split(".");
+	if (parts.length === 1) {
+		return { parentKey: null, childKey: null };
+	}
+	return {
+		parentKey: parts[0]!,
+		childKey: parts.slice(1).join("."),
+	};
+};
+
 function isFieldsArray<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
 	C extends Components = NonNullable<unknown>,
@@ -168,6 +180,10 @@ export function parseFields<
 ): InternalField<Z>[] {
 	let defaultFields: InternalField<Z>[] = [];
 
+	// Treat empty array the same as undefined - use schema defaults
+	const fieldsConfig =
+		fields === undefined || (Array.isArray(fields) && fields.length === 0) ? undefined : fields;
+
 	const autoFields: AutoField<C>[] = (schemaFields as ParsedField[]).map((field) => {
 		const item: AutoField<C> = {
 			label: camelToLabel(field.key),
@@ -179,7 +195,7 @@ export function parseFields<
 		return item;
 	});
 
-	if (!fields) {
+	if (!fieldsConfig) {
 		defaultFields = (schemaFields as ParsedField[]).map((field) => {
 			const item: InternalField<Z> = {
 				label: camelToLabel(field.key),
@@ -192,7 +208,7 @@ export function parseFields<
 
 			return item;
 		});
-	} else if (isFieldsFunction(fields)) {
+	} else if (fields !== undefined && isFieldsFunction(fields)) {
 		const transformed = fields(autoFields);
 
 		defaultFields = transformed
@@ -207,7 +223,7 @@ export function parseFields<
 					schema: schemaField?.schema || ([] as ParsedField[]),
 				} as InternalField<Z>;
 			});
-	} else if (isFieldsObject(fields)) {
+	} else if (fields !== undefined && isFieldsObject(fields)) {
 		defaultFields = (schemaFields as ParsedField[]).map((field) => {
 			const baseField: InternalField<Z> = {
 				label: camelToLabel(field.key),
@@ -241,7 +257,7 @@ export function parseFields<
 
 			return baseField;
 		});
-	} else if (isFieldsArray(fields)) {
+	} else if (fields !== undefined && isFieldsArray(fields)) {
 		const fieldMap = new Map<string, ParsedField>();
 
 		for (const field of schemaFields) {
@@ -254,7 +270,19 @@ export function parseFields<
 				mode: "value",
 				schema: [] as ParsedField[],
 			};
-			if (_field.name && fieldMap.has(_field.name)) {
+
+			const nestedPathInfo = _field.name
+				? parseNestedPath(_field.name)
+				: { parentKey: null as string | null, childKey: null as string | null };
+			const { parentKey } = nestedPathInfo;
+
+			if (parentKey && fieldMap.has(parentKey)) {
+				const parentField = fieldMap.get(parentKey)!;
+				if (parentField.type === "array") {
+					_field.arrayPath = parentKey;
+					_field.schema = parentField.schema || [];
+				}
+			} else if (_field.name && fieldMap.has(_field.name)) {
 				const _fieldSchema = fieldMap.get(_field.name)!;
 				_field.schema = _fieldSchema.schema!;
 				_field.mode = _fieldSchema.type === "array" ? "array" : "value";

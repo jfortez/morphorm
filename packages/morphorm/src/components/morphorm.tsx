@@ -110,15 +110,20 @@ const getLabelString = (label: unknown): string => {
 
 interface ArrayFieldProps {
 	col: InternalField;
+	nestedFields?: InternalField[];
 }
-const ArrayField = memo(({ col }: ArrayFieldProps) => {
+const ArrayField = memo(({ col, nestedFields = [] }: ArrayFieldProps) => {
 	const form = useFormContext() as unknown as ReturnType<typeof useAppForm>;
 
 	const schema = col.schema![0]!.schema!;
-	const nextParsedFields = parseFields([], schema);
-	const defaultValues = getDefaultValues(nextParsedFields);
+	const autoNestedFields = useMemo(() => parseFields([], schema), [schema]);
+	const defaultValues = useMemo(() => getDefaultValues(autoNestedFields), [autoNestedFields]);
 
-	if (nextParsedFields.length === 0) {
+	const allNestedFields = useMemo(() => {
+		return [...autoNestedFields, ...nestedFields];
+	}, [autoNestedFields, nestedFields]);
+
+	if (allNestedFields.length === 0) {
 		return null;
 	}
 
@@ -159,7 +164,7 @@ const ArrayField = memo(({ col }: ArrayFieldProps) => {
 									) : (
 										<div className="forma-flex forma-flex--col forma-flex--gap-3">
 											{items.map((_, idx) => {
-												const parsedFields = nextParsedFields.map((item) => ({
+												const parsedFields = allNestedFields.map((item: InternalField) => ({
 													...item,
 													name: `${col.name}[${idx}].${item.name}`,
 												}));
@@ -271,15 +276,32 @@ const ContextAwareField = ({ col, mode }: ContextAwareFieldProps) => {
 const RenderGrid = memo(({ parsedFields, rowOverrides, rowChildren }: RenderGridProps) => {
 	const rowFields = useMemo(() => generateGrid(parsedFields), [parsedFields]);
 
+	const nestedFieldsByArray = useMemo(() => {
+		const map = new Map<string, InternalField[]>();
+		for (const field of parsedFields) {
+			if (field.arrayPath) {
+				const existing = map.get(field.arrayPath) || [];
+				existing.push(field);
+				map.set(field.arrayPath, existing);
+			}
+		}
+		return map;
+	}, [parsedFields]);
+
 	return (
 		<div className="forma-flex forma-flex--col forma-flex--gap-4">
 			<div className="forma-flex forma-flex--col forma-flex--gap-4">
 				{rowFields.map((row, index) => {
-					const visibleFields = row.filter((col) => col.type !== "hidden");
+					const regularFields = row.filter(
+						(col) => col.type !== "hidden" && col.mode !== "array" && !col.arrayPath,
+					);
+					const arrayFields = row.filter(
+						(col) => col.type !== "hidden" && (col.mode === "array" || col.arrayPath),
+					);
 
 					const renderGrid = (
 						<div className="forma-row">
-							{row.map((col) => (
+							{regularFields.map((col) => (
 								<div
 									key={col.name}
 									className="forma-col"
@@ -295,6 +317,25 @@ const RenderGrid = memo(({ parsedFields, rowOverrides, rowChildren }: RenderGrid
 									)}
 								</div>
 							))}
+							{arrayFields.map((col) => {
+								const nestedFields = nestedFieldsByArray.get(col.name) || [];
+								return (
+									<div
+										key={col.name}
+										className="forma-col"
+										style={{
+											gridColumn: `span ${col.size} / span ${col.size}`,
+										}}
+									>
+										{col.mode === "array" && (
+											<ArrayField
+												col={col}
+												nestedFields={nestedFields}
+											/>
+										)}
+									</div>
+								);
+							})}
 						</div>
 					);
 
@@ -304,7 +345,7 @@ const RenderGrid = memo(({ parsedFields, rowOverrides, rowChildren }: RenderGrid
 								{rowOverrides(
 									renderGrid,
 									index,
-									visibleFields as unknown as FormaField<z.ZodObject<any>, Components>[],
+									regularFields as unknown as FormaField<z.ZodObject<any>, Components>[],
 								)}
 							</div>
 						);

@@ -7,6 +7,26 @@ import type { FormFieldType } from "./components/form-field";
 export type Components = Record<string, React.ComponentType<any>>;
 
 export type Sizes = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
+export type NestedPathKeys<Z extends z.ZodObject<any>> = {
+	[K in keyof z.infer<Z>]?: z.infer<Z>[K] extends z.ZodArray<infer S>
+		? S extends z.ZodObject<any>
+			? keyof z.infer<S>
+			: never
+		: never;
+};
+
+export type GetNestedPath<Z extends z.ZodObject<any>> =
+	Z["shape"] extends Record<string, any>
+		? {
+				[K in keyof Z["shape"]]: Z["shape"][K] extends z.ZodArray
+					? Z["shape"][K]["element"] extends z.ZodObject<any>
+						? `${K & string}.${keyof Z["shape"][K]["element"]["shape"] & string}`
+						: never
+					: never;
+			}[keyof Z["shape"]]
+		: never;
+
+export type FieldName<Z extends z.ZodObject<any>> = keyof z.infer<Z> | GetNestedPath<Z>;
 
 export interface SpacerType {
 	type: "fill";
@@ -42,7 +62,7 @@ export type FormaFieldBase<
 	K extends keyof z.infer<ZObject> = keyof z.infer<ZObject>,
 > = BaseField<ZObject, Context> &
 	FormFieldType<C, ZObject, Context> & {
-		name: K;
+		name: FieldName<ZObject>;
 		size?: Sizes;
 		watch?: FieldWatch<ZObject, K>;
 		overrides?: (
@@ -67,10 +87,8 @@ export type FormSubmitHandler<Z extends z.ZodObject<any>> = (
 	values: z.infer<Z>,
 ) => MaybePromise<void>;
 
-export type SchemaFieldNames<Z extends z.ZodObject<any>> = keyof z.infer<Z>;
-
 export interface AutoField<C extends Components = NonNullable<unknown>> {
-	name: string;
+	name: FieldName<z.ZodObject<any>>;
 	type: FieldType<C>;
 	label?: string;
 	size?: Sizes;
