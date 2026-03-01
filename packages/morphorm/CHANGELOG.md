@@ -1,5 +1,11 @@
 # Morphorm
 
+## 0.1.5
+
+### Patch Changes
+
+- 76458dc: add reactive watch tests for dynamic field updates
+
 ## 0.1.4
 
 ### Patch Changes
