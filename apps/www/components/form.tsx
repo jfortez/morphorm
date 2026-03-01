@@ -12,21 +12,27 @@ const formSchema = z.object({
 
 export const FormWithArray = () => (
 	<div data-testid="form-array-container">
-		<Forma<typeof formSchema>
+		<Forma
 			schema={formSchema}
 			fields={[
 				{
 					name: "firstName",
+					label: "firstName",
+					placeholder: "firstName",
 					size: 6,
 					type: "text",
 				},
 				{
 					name: "lastName",
+					label: "lastName",
+					placeholder: "lastName",
 					size: 6,
 					type: "text",
 				},
 				{
 					name: "fullName",
+					label: "fullName",
+					placeholder: ({ fieldValues }) => `${fieldValues.firstName} ${fieldValues.lastName}`,
 					size: 12,
 					type: "text",
 					watch: ["firstName", "lastName"],

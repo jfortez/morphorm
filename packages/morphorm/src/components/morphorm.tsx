@@ -3,7 +3,6 @@ import type { z } from "zod";
 
 import * as React from "react";
 import { memo, useEffect, useMemo } from "react";
-import { useStore } from "@tanstack/react-form";
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
 
@@ -109,112 +108,150 @@ const getLabelString = (label: unknown): string => {
 	return "";
 };
 
+interface ArrayFieldProps {
+	col: InternalField;
+}
+const ArrayField = memo(({ col }: ArrayFieldProps) => {
+	const form = useFormContext() as unknown as ReturnType<typeof useAppForm>;
+
+	const schema = col.schema![0]!.schema!;
+	const nextParsedFields = parseFields([], schema);
+	const defaultValues = getDefaultValues(nextParsedFields);
+
+	if (nextParsedFields.length === 0) {
+		return null;
+	}
+
+	return (
+		<div className="forma-group">
+			<Collapsible defaultOpen>
+				<form.Field
+					name={col.name as never}
+					mode="array"
+				>
+					{(field) => {
+						const items = (field.state.value as unknown[]) || [];
+
+						return (
+							<div className="forma-flex forma-flex--col forma-flex--gap-2">
+								<CollapsibleTrigger
+									className="forma-bg-background"
+									asChild
+								>
+									<div>
+										<ArrayItemControl
+											label={getLabelString(col.label)}
+											defaultValues={defaultValues}
+										/>
+									</div>
+								</CollapsibleTrigger>
+
+								<CollapsibleContent className="forma-group forma-bg-accent-hover forma-bg-background">
+									{items.length === 0 ? (
+										<div className="forma-array-empty">
+											<div>
+												<h3 className="forma-array-empty__title">No items</h3>
+												<span className="forma-array-empty__description">
+													Add an item to get started
+												</span>
+											</div>
+										</div>
+									) : (
+										<div className="forma-flex forma-flex--col forma-flex--gap-3">
+											{items.map((_, idx) => {
+												const parsedFields = nextParsedFields.map((item) => ({
+													...item,
+													name: `${col.name}[${idx}].${item.name}`,
+												}));
+
+												const handleRemoveItem = () => {
+													field.removeValue(idx);
+												};
+
+												return (
+													<ArrayFieldItem
+														key={idx}
+														onRemove={handleRemoveItem}
+														parsedFields={parsedFields}
+													/>
+												);
+											})}
+										</div>
+									)}
+								</CollapsibleContent>
+							</div>
+						);
+					}}
+				</form.Field>
+			</Collapsible>
+		</div>
+	);
+});
+
+interface ArrayFieldItemProps {
+	parsedFields: InternalField[];
+	onRemove: () => void;
+}
+
+const ArrayFieldItem = memo(({ parsedFields, onRemove }: ArrayFieldItemProps) => {
+	return (
+		<div className="forma-array-item">
+			<Button
+				type="button"
+				className="forma-array-item__actions forma-button--icon-sm"
+				variant="destructive"
+				size="icon-sm"
+				onClick={onRemove}
+			>
+				<TrashIcon className="forma-icon-sm" />
+			</Button>
+			<RenderGrid parsedFields={parsedFields} />
+		</div>
+	);
+});
+
 const ContextAwareField = ({ col, mode }: ContextAwareFieldProps) => {
 	const form = useFormContext() as unknown as ReturnType<typeof useAppForm>;
 	const { context } = useFormKit();
 
-	const formState = useStore(form.store, (state) => state);
-
-	const watchedValues = useMemo(() => {
-		if (!col.watch || col.watch.length === 0) {
-			return {};
-		}
-
-		const values: Record<string, unknown> = {};
-		for (const key of col.watch) {
-			values[key] = (formState as any).values?.[key];
-		}
-		return values;
-	}, [formState, col.watch]);
+	const hasWatch = col.watch && col.watch.length > 0;
+	const hasWatchContext = col.watchContext && col.watchContext.length > 0;
 
 	const slicedContext = useMemo(() => {
-		if (!col.watchContext || col.watchContext.length === 0) {
+		if (!hasWatchContext) {
 			return undefined;
 		}
 
-		return col.watchContext.reduce((acc, key) => ({ ...acc, [key]: context?.[key] }), {} as any);
-	}, [context, col.watchContext]);
+		return col.watchContext!.reduce((acc, key) => ({ ...acc, [key]: context?.[key] }), {} as any);
+	}, [context, hasWatchContext, col.watchContext]);
 
 	if (mode === "array") {
-		const schema = col.schema![0]!.schema!;
-		const nextParsedFields = parseFields([], schema);
-		if (nextParsedFields.length === 0) {
-			return null;
-		}
-		const defaultValues = getDefaultValues(nextParsedFields);
+		return <ArrayField col={col} />;
+	}
+
+	if (hasWatch) {
+		const watchSelector = (state: any) => {
+			const values: Record<string, unknown> = {};
+			for (const key of col.watch!) {
+				values[key] = state.values?.[key];
+			}
+			return values;
+		};
 
 		return (
-			<div className="forma-group">
-				<Collapsible defaultOpen>
-					<form.Field
-						name={col.name as never}
-						mode="array"
-					>
-						{(field: any) => {
-							const items = (field.state.value as unknown[]) || [];
-
-							return (
-								<div className="forma-flex forma-flex--col forma-flex--gap-2">
-									<CollapsibleTrigger
-										className="forma-bg-background"
-										asChild
-									>
-										<div>
-											<ArrayItemControl
-												label={getLabelString(col.label)}
-												defaultValues={defaultValues}
-											/>
-										</div>
-									</CollapsibleTrigger>
-
-									<CollapsibleContent className="forma-group forma-bg-accent-hover forma-bg-background">
-										{items.length === 0 ? (
-											<div className="forma-array-empty">
-												<div>
-													<h3 className="forma-array-empty__title">No items</h3>
-													<span className="forma-array-empty__description">
-														Add an item to get started
-													</span>
-												</div>
-											</div>
-										) : (
-											<div className="forma-flex forma-flex--col forma-flex--gap-3">
-												{items.map((_, idx) => {
-													const parsedFields = nextParsedFields.map((item) => ({
-														...item,
-														name: `${col.name}[${idx}].${item.name}`,
-													}));
-
-													const handleRemoveItem = () => {
-														field.removeValue(idx);
-													};
-													return (
-														<div
-															className="forma-array-item"
-															key={idx}
-														>
-															<Button
-																type="button"
-																className="forma-array-item__actions forma-button--icon-sm"
-																variant="destructive"
-																size="icon-sm"
-																onClick={handleRemoveItem}
-															>
-																<TrashIcon className="forma-icon-sm" />
-															</Button>
-															<RenderGrid parsedFields={parsedFields} />
-														</div>
-													);
-												})}
-											</div>
-										)}
-									</CollapsibleContent>
-								</div>
-							);
-						}}
-					</form.Field>
-				</Collapsible>
-			</div>
+			<form.Subscribe selector={watchSelector}>
+				{(watchedValues) => (
+					<form.AppField name={col.name as never}>
+						{() => (
+							<FormField
+								metadata={col as unknown as any}
+								context={slicedContext}
+								fieldValues={watchedValues}
+							/>
+						)}
+					</form.AppField>
+				)}
+			</form.Subscribe>
 		);
 	}
 
@@ -224,7 +261,7 @@ const ContextAwareField = ({ col, mode }: ContextAwareFieldProps) => {
 				<FormField
 					metadata={col as unknown as any}
 					context={slicedContext}
-					fieldValues={watchedValues}
+					fieldValues={{}}
 				/>
 			)}
 		</form.AppField>

@@ -35,14 +35,11 @@ jobs:
       - name: Install Dependencies
         run: bun install
 
-      - name: Build Dependencies
-        run: bun run build --filter=@morphorm/core
+      - name: Build Package
+        run: bun run build:pkg
 
       - name: Run Tests
         run: bun test
-
-      - name: Build Package
-        run: bun run build --filter=morphorm
 
       - name: Create Release Pull Request or Publish to npm
         id: changesets
