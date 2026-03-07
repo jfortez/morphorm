@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
@@ -1210,7 +1210,7 @@ describe("FormKit", () => {
 		// 	Expect(screen.getByText(/add/i)).toBeInTheDocument();
 		// });
 
-		it("renders array field with custom fields configuration", () => {
+		it("renders array field with custom fields configuration", async () => {
 			const schema = z.object({
 				todos: z.array(
 					z.object({
@@ -1245,9 +1245,11 @@ describe("FormKit", () => {
 			expect(screen.getByText(/add/i)).toBeInTheDocument();
 
 			const addButton = screen.getByText(/add todos/i);
-			user.click(addButton);
+			await user.click(addButton);
 
-			expect(screen.getByTestId("field-todos.title")).toBeInTheDocument();
+			await waitFor(() => {
+				expect(screen.getByTestId("field-todos.title")).toBeInTheDocument();
+			});
 			expect(screen.getByTestId("label-todos.title")).toHaveTextContent(/custom title/i);
 		});
 	});
