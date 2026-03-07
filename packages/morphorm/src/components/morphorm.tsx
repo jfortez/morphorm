@@ -159,7 +159,7 @@ const ArrayField = memo(({ col, nestedFields = [], fieldsConfig = [] }: ArrayFie
 											{items.map((_, idx) => {
 												const parsedFields = allNestedFields.map((item: InternalField) => ({
 													...item,
-													name: `${col.name}.${item.name}`,
+													name: `${col.name}[${idx}].${item.name}`,
 												}));
 
 												const handleRemoveItem = () => {

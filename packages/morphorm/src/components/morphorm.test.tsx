@@ -1181,34 +1181,34 @@ describe("FormKit", () => {
 			expect(screen.getByText(/add/i)).toBeInTheDocument();
 		});
 
-		// It("renders array field with initial values", () => {
-		// 	Const schema = z.object({
-		// 		Products: z.array(
-		// 			Z.object({
-		// 				Name: z.string(),
-		// 				Price: z.number(),
-		// 			}),
-		// 		),
-		// 	});
+		it("renders array field with initial values", () => {
+			const schema = z.object({
+				products: z.array(
+					z.object({
+						name: z.string(),
+						price: z.number(),
+					}),
+				),
+			});
 
-		// 	Render(
-		// 		<Forma
-		// 			Schema={schema}
-		// 			InitialValues={{
-		// 				Products: [{ name: "Widget", price: 29.99 }],
-		// 			}}
-		// 			OnSubmit={mockSubmit}
-		// 			ShowSubmit
-		// 		/>,
-		// 	);
+			render(
+				<Forma
+					schema={schema}
+					initialValues={{
+						products: [{ name: "Widget", price: 29.99 }],
+					}}
+					onSubmit={mockSubmit}
+					showSubmit
+				/>,
+			);
 
-		// 	Expect(screen.queryByText(/no items/i)).not.toBeInTheDocument();
-		// 	Expect(screen.getByTestId("input-products[0].name")).toBeInTheDocument();
-		// 	Expect(screen.getByTestId("input-products[0].price")).toBeInTheDocument();
-		// 	Expect(screen.getByTestId("number-products[0].price")).toHaveTextContent("29.99");
-		// 	Expect(screen.getByTestId("input-products[0].name")).toHaveValue("Widget");
-		// 	Expect(screen.getByText(/add/i)).toBeInTheDocument();
-		// });
+			expect(screen.queryByText(/no items/i)).not.toBeInTheDocument();
+			expect(screen.getByTestId("input-products[0].name")).toBeInTheDocument();
+			expect(screen.getByTestId("input-products[0].price")).toBeInTheDocument();
+			expect(screen.getByTestId("number-products[0].price")).toHaveValue(29.99);
+			expect(screen.getByTestId("input-products[0].name")).toHaveValue("Widget");
+			expect(screen.getByText(/add/i)).toBeInTheDocument();
+		});
 
 		it("renders array field with custom fields configuration", async () => {
 			const schema = z.object({
@@ -1248,9 +1248,61 @@ describe("FormKit", () => {
 			await user.click(addButton);
 
 			await waitFor(() => {
-				expect(screen.getByTestId("field-todos.title")).toBeInTheDocument();
+				expect(screen.getByTestId("field-todos[0].title")).toBeInTheDocument();
 			});
-			expect(screen.getByTestId("label-todos.title")).toHaveTextContent(/custom title/i);
+			expect(screen.getByTestId("label-todos[0].title")).toHaveTextContent(/custom title/i);
+		});
+
+		it("renders array field with custom fields configuration and default values", async () => {
+			const schema = z.object({
+				todos: z.array(
+					z.object({
+						title: z.string(),
+						completed: z.boolean(),
+					}),
+				),
+			});
+
+			const user = userEvent.setup();
+
+			render(
+				<Forma
+					schema={schema}
+					initialValues={{
+						todos: [
+							{ title: "First Task", completed: true },
+							{ title: "Second Task", completed: false },
+						],
+					}}
+					fields={[
+						{
+							name: "todos.title",
+							label: "Task",
+							type: "text",
+						},
+						{
+							name: "todos.completed",
+							label: "Is Task Completed",
+							type: "checkbox",
+						},
+					]}
+					onSubmit={mockSubmit}
+					showSubmit
+				/>,
+			);
+
+			expect(screen.queryByText(/no items/i)).not.toBeInTheDocument();
+			expect(screen.getByTestId("input-todos[0].title")).toBeInTheDocument();
+			expect(screen.getByTestId("checkbox-todos[0].completed")).toBeInTheDocument();
+			expect(screen.getByTestId("checkbox-todos[0].completed")).toBeChecked();
+			expect(screen.getByTestId("input-todos[1].title")).toBeInTheDocument();
+			expect(screen.getByTestId("checkbox-todos[1].completed")).toBeInTheDocument();
+			expect(screen.getByTestId("checkbox-todos[1].completed")).not.toBeChecked();
+			expect(screen.getByTestId("input-todos[0].title")).toHaveValue("First Task");
+			expect(screen.getByTestId("input-todos[1].title")).toHaveValue("Second Task");
+
+			const addButton = screen.getByText(/add todos/i);
+			await user.click(addButton);
 		});
 	});
 });
