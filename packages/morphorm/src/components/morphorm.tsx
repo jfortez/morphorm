@@ -13,7 +13,7 @@ import type { InternalField } from "../util";
 
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
-import { Form, useFieldContext, useFormContext } from "./ui/form";
+import { Form, useFormContext } from "./ui/form";
 import { FormComponentsProvider, useFormKit } from "./form-context";
 import FormField from "./form-field";
 import { useAppForm } from "./form-hook";
@@ -49,19 +49,17 @@ interface RenderGridProps {
 	parsedFields: InternalField[];
 	rowOverrides?: RowOverrides<z.ZodObject<any>, Components>;
 	rowChildren?: React.ReactNode;
+	fieldsConfig?: InternalField[];
 }
 
 const getDefaultsByType = (type: string) => {
 	const map = {
 		text: "",
+		checkbox: false,
+		number: 0,
 	};
 	return map[type as keyof typeof map];
 };
-
-interface ArrayItemProps {
-	label?: string;
-	defaultValues?: Record<string, unknown>;
-}
 
 const getDefaultValues = (parsedFields: InternalField[]) =>
 	parsedFields.reduce(
@@ -71,30 +69,6 @@ const getDefaultValues = (parsedFields: InternalField[]) =>
 		},
 		{} as Record<string, unknown>,
 	);
-
-const ArrayItemControl = ({ defaultValues, label }: ArrayItemProps) => {
-	const field = useFieldContext();
-
-	const handleAddItem = (e: React.MouseEvent<HTMLButtonElement>) => {
-		e.stopPropagation();
-		e.preventDefault();
-		field.pushValue(defaultValues as never);
-	};
-	return (
-		<div className="forma-flex forma-flex--items-center forma-flex--justify-between">
-			<Label>{label}</Label>
-			<div className="forma-flex forma-flex--items-center forma-flex--justify-end">
-				<Button
-					onClick={handleAddItem}
-					size={label ? "sm" : "icon"}
-				>
-					<PlusIcon />
-					{label && `Add ${label}`}
-				</Button>
-			</div>
-		</div>
-	);
-};
 
 interface ContextAwareFieldProps {
 	col: InternalField;
@@ -111,12 +85,28 @@ const getLabelString = (label: unknown): string => {
 interface ArrayFieldProps {
 	col: InternalField;
 	nestedFields?: InternalField[];
+	fieldsConfig?: InternalField[];
 }
-const ArrayField = memo(({ col, nestedFields = [] }: ArrayFieldProps) => {
+const ArrayField = memo(({ col, nestedFields = [], fieldsConfig = [] }: ArrayFieldProps) => {
 	const form = useFormContext() as unknown as ReturnType<typeof useAppForm>;
 
 	const schema = col.schema![0]!.schema!;
-	const autoNestedFields = useMemo(() => parseFields([], schema), [schema]);
+	const arrayFieldConfig = fieldsConfig
+		.filter((f) => f.name.startsWith(`${col.name}.`))
+		.map((f) => ({ ...f, name: f.name.replace(`${col.name}.`, "") }));
+
+	const fieldsAsObject = arrayFieldConfig.reduce(
+		(acc, f) => {
+			acc[f.name] = { label: f.label, type: f.type };
+			return acc;
+		},
+		{} as Record<string, any>,
+	);
+
+	const autoNestedFields = useMemo(
+		() => parseFields(Object.keys(fieldsAsObject).length > 0 ? fieldsAsObject : undefined, schema),
+		[schema, fieldsAsObject],
+	);
 	const defaultValues = useMemo(() => getDefaultValues(autoNestedFields), [autoNestedFields]);
 
 	const allNestedFields = useMemo(() => {
@@ -139,17 +129,20 @@ const ArrayField = memo(({ col, nestedFields = [] }: ArrayFieldProps) => {
 
 						return (
 							<div className="forma-flex forma-flex--col forma-flex--gap-2">
-								<CollapsibleTrigger
-									className="forma-bg-background"
-									asChild
-								>
-									<div>
-										<ArrayItemControl
-											label={getLabelString(col.label)}
-											defaultValues={defaultValues}
-										/>
-									</div>
-								</CollapsibleTrigger>
+								<div className="forma-bg-background forma-flex forma-flex--items-center forma-flex--justify-between">
+									<CollapsibleTrigger>
+										<Label>{getLabelString(col.label)}</Label>
+									</CollapsibleTrigger>
+									<Button
+										type="button"
+										data-testid={`add-${col.name}`}
+										onClick={() => field.pushValue(defaultValues as never)}
+										size="sm"
+									>
+										<PlusIcon />
+										Add {getLabelString(col.label)}
+									</Button>
+								</div>
 
 								<CollapsibleContent className="forma-group forma-bg-accent-hover forma-bg-background">
 									{items.length === 0 ? (
@@ -157,7 +150,7 @@ const ArrayField = memo(({ col, nestedFields = [] }: ArrayFieldProps) => {
 											<div>
 												<h3 className="forma-array-empty__title">No items</h3>
 												<span className="forma-array-empty__description">
-													Add an item to get started
+													Click the + button to get started
 												</span>
 											</div>
 										</div>
@@ -166,7 +159,7 @@ const ArrayField = memo(({ col, nestedFields = [] }: ArrayFieldProps) => {
 											{items.map((_, idx) => {
 												const parsedFields = allNestedFields.map((item: InternalField) => ({
 													...item,
-													name: `${col.name}[${idx}].${item.name}`,
+													name: `${col.name}.${item.name}`,
 												}));
 
 												const handleRemoveItem = () => {
@@ -273,53 +266,36 @@ const ContextAwareField = ({ col, mode }: ContextAwareFieldProps) => {
 	);
 };
 
-const RenderGrid = memo(({ parsedFields, rowOverrides, rowChildren }: RenderGridProps) => {
-	const rowFields = useMemo(() => generateGrid(parsedFields), [parsedFields]);
+const RenderGrid = memo(
+	({ parsedFields, rowOverrides, rowChildren, fieldsConfig = [] }: RenderGridProps) => {
+		const rowFields = useMemo(() => generateGrid(parsedFields), [parsedFields]);
 
-	const nestedFieldsByArray = useMemo(() => {
-		const map = new Map<string, InternalField[]>();
-		for (const field of parsedFields) {
-			if (field.arrayPath) {
-				const existing = map.get(field.arrayPath) || [];
-				existing.push(field);
-				map.set(field.arrayPath, existing);
+		const nestedFieldsByArray = useMemo(() => {
+			const map = new Map<string, InternalField[]>();
+			for (const field of parsedFields) {
+				if (field.arrayPath) {
+					const existing = map.get(field.arrayPath) || [];
+					existing.push(field);
+					map.set(field.arrayPath, existing);
+				}
 			}
-		}
-		return map;
-	}, [parsedFields]);
+			return map;
+		}, [parsedFields]);
 
-	return (
-		<div className="forma-flex forma-flex--col forma-flex--gap-4">
+		return (
 			<div className="forma-flex forma-flex--col forma-flex--gap-4">
-				{rowFields.map((row, index) => {
-					const regularFields = row.filter(
-						(col) => col.type !== "hidden" && col.mode !== "array" && !col.arrayPath,
-					);
-					const arrayFields = row.filter(
-						(col) => col.type !== "hidden" && (col.mode === "array" || col.arrayPath),
-					);
+				<div className="forma-flex forma-flex--col forma-flex--gap-4">
+					{rowFields.map((row, index) => {
+						const regularFields = row.filter(
+							(col) => col.type !== "hidden" && col.mode !== "array" && !col.arrayPath,
+						);
+						const arrayFields = row.filter(
+							(col) => col.type !== "hidden" && (col.mode === "array" || col.arrayPath),
+						);
 
-					const renderGrid = (
-						<div className="forma-row">
-							{regularFields.map((col) => (
-								<div
-									key={col.name}
-									className="forma-col"
-									style={{
-										gridColumn: `span ${col.size} / span ${col.size}`,
-									}}
-								>
-									{col.type !== "hidden" && (
-										<ContextAwareField
-											col={col}
-											mode={col.mode}
-										/>
-									)}
-								</div>
-							))}
-							{arrayFields.map((col) => {
-								const nestedFields = nestedFieldsByArray.get(col.name) || [];
-								return (
+						const renderGrid = (
+							<div className="forma-row">
+								{regularFields.map((col) => (
 									<div
 										key={col.name}
 										className="forma-col"
@@ -327,37 +303,57 @@ const RenderGrid = memo(({ parsedFields, rowOverrides, rowChildren }: RenderGrid
 											gridColumn: `span ${col.size} / span ${col.size}`,
 										}}
 									>
-										{col.mode === "array" && (
-											<ArrayField
+										{col.type !== "hidden" && (
+											<ContextAwareField
 												col={col}
-												nestedFields={nestedFields}
+												mode={col.mode}
 											/>
 										)}
 									</div>
-								);
-							})}
-						</div>
-					);
-
-					if (rowOverrides) {
-						return (
-							<div key={`row-${index + 1}`}>
-								{rowOverrides(
-									renderGrid,
-									index,
-									regularFields as unknown as FormaField<z.ZodObject<any>, Components>[],
-								)}
+								))}
+								{arrayFields.map((col) => {
+									const nestedFields = nestedFieldsByArray.get(col.name) || [];
+									return (
+										<div
+											key={col.name}
+											className="forma-col"
+											style={{
+												gridColumn: `span ${col.size} / span ${col.size}`,
+											}}
+										>
+											{col.mode === "array" && (
+												<ArrayField
+													col={col}
+													nestedFields={nestedFields}
+													fieldsConfig={fieldsConfig}
+												/>
+											)}
+										</div>
+									);
+								})}
 							</div>
 						);
-					}
 
-					return <div key={`row-${index + 1}`}>{renderGrid}</div>;
-				})}
-				{rowChildren}
+						if (rowOverrides) {
+							return (
+								<div key={`row-${index + 1}`}>
+									{rowOverrides(
+										renderGrid,
+										index,
+										regularFields as unknown as FormaField<z.ZodObject<any>, Components>[],
+									)}
+								</div>
+							);
+						}
+
+						return <div key={`row-${index + 1}`}>{renderGrid}</div>;
+					})}
+					{rowChildren}
+				</div>
 			</div>
-		</div>
-	);
-});
+		);
+	},
+);
 
 export const Forma = <
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
@@ -442,6 +438,7 @@ export const Forma = <
 						parsedFields={parsedFields}
 						rowOverrides={rowOverrides as never}
 						rowChildren={rowChildren}
+						fieldsConfig={parsedFields}
 					/>
 					{showSubmit && (
 						<SubmitButton
