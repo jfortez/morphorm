@@ -130,7 +130,7 @@ const ArrayField = memo(({ col, nestedFields = [] }: ArrayFieldProps) => {
 	return (
 		<div className="forma-group">
 			<Collapsible defaultOpen>
-				<form.Field
+				<form.AppField
 					name={col.name as never}
 					mode="array"
 				>
@@ -187,7 +187,7 @@ const ArrayField = memo(({ col, nestedFields = [] }: ArrayFieldProps) => {
 							</div>
 						);
 					}}
-				</form.Field>
+				</form.AppField>
 			</Collapsible>
 		</div>
 	);

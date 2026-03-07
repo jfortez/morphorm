@@ -264,6 +264,8 @@ export function parseFields<
 			fieldMap.set(field.key, field);
 		}
 
+		const parentArrayFields = new Set<string>();
+
 		for (const field of fields) {
 			const _field: InternalField<Z> = {
 				...(field as any),
@@ -281,6 +283,7 @@ export function parseFields<
 				if (parentField.type === "array") {
 					_field.arrayPath = parentKey;
 					_field.schema = parentField.schema || [];
+					parentArrayFields.add(parentKey);
 				}
 			} else if (_field.name && fieldMap.has(_field.name)) {
 				const _fieldSchema = fieldMap.get(_field.name)!;
@@ -289,6 +292,21 @@ export function parseFields<
 			}
 
 			defaultFields.push(_field);
+		}
+
+		for (const arrayKey of parentArrayFields) {
+			const parentField = fieldMap.get(arrayKey)!;
+			const exists = defaultFields.some((f) => f.name === arrayKey);
+			if (!exists && parentField.type === "array") {
+				defaultFields.push({
+					name: arrayKey,
+					label: camelToLabel(arrayKey),
+					mode: "array",
+					type: toBaseType(parentField.type),
+					schema: parentField.schema || [],
+					size: 12,
+				} as InternalField<Z>);
+			}
 		}
 	}
 
