@@ -5,7 +5,7 @@ import { useMemo } from "react";
 import type { z } from "zod";
 
 import type { FieldType } from "../fields";
-import type { Components, FnArgs, ValueOrFunction } from "../types";
+import type { Components, CustomPropertyArgs, ValueOrFunction } from "../types";
 
 import Field from "../fields";
 import {
@@ -40,7 +40,7 @@ type FormFieldMap<
 	} & {
 		[Key in keyof _SharedFieldProps]?: ValueOrFunction<
 			Required<_SharedFieldProps>[Key],
-			FnArgs<Z, Context>
+			CustomPropertyArgs<Z, Context>
 		>;
 	};
 };

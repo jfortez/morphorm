@@ -1304,5 +1304,104 @@ describe("FormKit", () => {
 			const addButton = screen.getByText(/add todos/i);
 			await user.click(addButton);
 		});
+
+		it("renders array field with watch and context", async () => {
+			const schema = z.object({
+				name: z.string(),
+				age: z.number(),
+				tasks: z.array(
+					z.object({
+						title: z.string(),
+						notes: z.string().optional(),
+						priority: z.string().optional(),
+					}),
+				),
+			});
+
+			const user = userEvent.setup();
+
+			render(
+				<Forma
+					schema={schema}
+					context={{ userRole: "admin" }}
+					fields={[
+						{
+							name: "name",
+							label: "Name",
+							type: "text",
+						},
+						{
+							name: "age",
+							label: "Age",
+							type: "number",
+							watch: ["name"],
+						},
+						{
+							name: "tasks.title",
+							label: "Task Title",
+							type: "text",
+						},
+						{
+							name: "tasks.notes",
+							label: "Task Notes",
+							type: "textarea",
+							watch: ["tasks.title"],
+							watchContext: ["userRole"],
+							disabled: ({ fieldValues }) => !fieldValues.tasks,
+							placeholder: ({ context }) =>
+								context?.userRole ? `Add notes for ${context.userRole}...` : "Add notes...",
+						},
+						{
+							name: "tasks.priority",
+							label: ({ context }) =>
+								context?.userRole ? `Priority (${context.userRole})` : "Priority",
+							type: "text",
+						},
+					]}
+					onSubmit={mockSubmit}
+					showSubmit
+				/>,
+			);
+
+			expect(screen.getByText(/no items/i)).toBeInTheDocument();
+
+			const addButton = screen.getByText(/add tasks/i);
+			await user.click(addButton);
+
+			await waitFor(() => {
+				expect(screen.getByTestId("field-tasks[0].title")).toBeInTheDocument();
+			});
+
+			const notesInput = screen.getByTestId("textarea-tasks[0].notes") as HTMLTextAreaElement;
+			expect(notesInput).toBeInTheDocument();
+			expect(notesInput.disabled).toBe(true);
+			expect(notesInput.placeholder).toBe("Add notes for admin...");
+
+			const priorityLabel = screen.getByTestId("label-tasks[0].priority");
+			expect(priorityLabel).toHaveTextContent(/priority \(admin\)/i);
+
+			const titleInput = screen.getByTestId("input-tasks[0].title") as HTMLInputElement;
+			await user.type(titleInput, "Important Task");
+
+			await waitFor(() => {
+				expect(notesInput.disabled).toBe(false);
+			});
+
+			await user.click(addButton);
+
+			await waitFor(() => {
+				expect(screen.getByTestId("field-tasks[1].title")).toBeInTheDocument();
+			});
+
+			const notesInput2 = screen.getByTestId("textarea-tasks[1].notes") as HTMLTextAreaElement;
+			expect(notesInput2.disabled).toBe(true);
+
+			const titleInput2 = screen.getByTestId("input-tasks[1].title") as HTMLInputElement;
+			await user.type(titleInput2, "Another Task");
+
+			await waitFor(() => {
+				expect(notesInput2.disabled).toBe(false);
+			});
+		});
 	});
 });

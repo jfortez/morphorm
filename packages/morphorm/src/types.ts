@@ -1,5 +1,5 @@
 // oxlint-disable typescript/no-explicit-any
-import type { z } from "zod";
+import type * as z from "zod";
 
 import type { FieldType } from "./fields";
 import type { FormFieldType } from "./components/form-field";
@@ -7,78 +7,129 @@ import type { FormFieldType } from "./components/form-field";
 export type Components = Record<string, React.ComponentType<any>>;
 
 export type Sizes = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
-export type NestedPathKeys<Z extends z.ZodObject<any>> = {
-	[K in keyof z.infer<Z>]?: z.infer<Z>[K] extends z.ZodArray<infer S>
-		? S extends z.ZodObject<any>
-			? keyof z.infer<S>
-			: never
+
+type InferZodType<T> = T extends z.ZodType<infer U> ? U : never;
+
+export type ContextType = Record<string, any>;
+
+type Paths<T, Prefix extends string = "", Depth extends unknown[] = []> = Depth["length"] extends 15
+	? never
+	: T extends object
+		? T extends any[]
+			? never
+			: {
+					[K in keyof T]-?: K extends string | number
+						? T[K] extends any[]
+							? T[K] extends (infer Item)[]
+								? Item extends object
+									?
+											| `${Prefix}${K & string}`
+											| `${Prefix}${K & string}.${Paths<Item, "", [...Depth, 1]>}`
+									: `${Prefix}${K & string}`
+								: `${Prefix}${K & string}`
+							: T[K] extends object
+								? T[K] extends Date | RegExp | Function
+									? `${Prefix}${K & string}`
+									:
+											| `${Prefix}${K & string}`
+											| `${Prefix}${K & string}.${Paths<T[K], "", [...Depth, 1]>}`
+								: `${Prefix}${K & string}`
+						: never;
+				}[keyof T]
 		: never;
+
+export type PathValue<T, P extends string> = P extends `${infer Key}.${infer Rest}`
+	? Key extends keyof T
+		? T[Key] extends (infer Item)[]
+			? PathValue<Item, Rest>
+			: PathValue<T[Key], Rest>
+		: never
+	: P extends keyof T
+		? T[P] extends (infer Item)[]
+			? Item
+			: T[P]
+		: never;
+
+export type FieldName<Z extends z.ZodObject<any>> = Paths<InferZodType<Z>>;
+
+type ExtractFieldValues<Z extends z.ZodObject<any>, WatchPaths extends FieldName<Z>[]> = {
+	[K in WatchPaths[number]]: PathValue<InferZodType<Z>, K & string>;
 };
-
-export type GetNestedPath<Z extends z.ZodObject<any>> =
-	Z["shape"] extends Record<string, any>
-		? {
-				[K in keyof Z["shape"]]: Z["shape"][K] extends z.ZodArray
-					? Z["shape"][K]["element"] extends z.ZodObject<any>
-						? `${K & string}.${keyof Z["shape"][K]["element"]["shape"] & string}`
-						: never
-					: never;
-			}[keyof Z["shape"]]
-		: never;
-
-export type FieldName<Z extends z.ZodObject<any>> = keyof z.infer<Z> | GetNestedPath<Z>;
 
 export interface SpacerType {
 	type: "fill";
 	size?: Sizes;
 }
 
-export interface FnArgs<Z extends z.ZodObject<any> = z.ZodObject<any>, ContextType = any> {
-	fieldValues: z.infer<Z>;
-	context: ContextType;
+export type FieldWatch<Z extends z.ZodObject<any>, Name extends FieldName<Z>> = Exclude<
+	FieldName<Z>,
+	Name
+>[];
+
+export interface CustomPropertyArgs<
+	Z extends z.ZodObject<any> = z.ZodObject<any>,
+	C extends ContextType = ContextType,
+	W extends FieldName<Z>[] = FieldName<Z>[],
+> {
+	fieldValues: ExtractFieldValues<Z, W>;
+	context: C;
 }
 
 export type ValueOrFunction<T, Args> = T | ((args: Args) => T);
 
-export interface BaseField<Z extends z.ZodObject<any> = z.ZodObject<any>, Context = any> {
+type CustomPropertyFn<
+	T,
+	Z extends z.ZodObject<any>,
+	C extends ContextType = ContextType,
+	_W extends FieldName<Z>[] = FieldName<Z>[],
+> = (args: CustomPropertyArgs<Z, C>) => T;
+
+export type CustomProperty<
+	T,
+	Z extends z.ZodObject<any>,
+	C extends ContextType = ContextType,
+	W extends FieldName<Z>[] = FieldName<Z>[],
+> = T | CustomPropertyFn<T, Z, C, W>;
+
+export interface BaseField<
+	Z extends z.ZodObject<any> = z.ZodObject<any>,
+	Context extends ContextType = ContextType,
+	Watch extends FieldName<Z>[] = FieldName<Z>[],
+> {
 	name: string;
 	element?: React.ReactNode;
-	label?: ValueOrFunction<string | React.ReactNode, FnArgs<Z, Context>>;
-	placeholder?: ValueOrFunction<string, FnArgs<Z, Context>>;
-	description?: ValueOrFunction<string, FnArgs<Z, Context>>;
-	disabled?: ValueOrFunction<boolean, FnArgs<Z, Context>>;
-	watchContext?: Context extends Record<string, any> ? (keyof Context)[] : string[];
+	label?: CustomProperty<React.ReactNode, Z, Context, Watch>;
+	placeholder?: CustomProperty<string, Z, Context, Watch>;
+	description?: CustomProperty<string, Z, Context, Watch>;
+	disabled?: CustomProperty<boolean, Z, Context, Watch>;
+	watchContext?: (keyof Context)[];
 }
 
-export type FieldWatch<Z extends z.ZodObject<any>, K extends keyof z.infer<Z>> = Exclude<
-	keyof z.infer<Z>,
-	K
->[];
-
 export type FormaFieldBase<
-	ZObject extends z.ZodObject<any> = z.ZodObject<any>,
+	Z extends z.ZodObject<any> = z.ZodObject<any>,
 	C extends Components = NonNullable<unknown>,
-	Context = any,
-	K extends keyof z.infer<ZObject> = keyof z.infer<ZObject>,
-> = BaseField<ZObject, Context> &
-	FormFieldType<C, ZObject, Context> & {
-		name: FieldName<ZObject>;
+	Context extends ContextType = ContextType,
+	Name extends FieldName<Z> = FieldName<Z>,
+	Watch extends FieldWatch<Z, Name> = FieldWatch<Z, Name>,
+> = BaseField<Z, Context, Watch> &
+	FormFieldType<C, Z, Context> & {
+		name: Name;
 		size?: Sizes;
-		watch?: FieldWatch<ZObject, K>;
+		watch?: Watch;
 		overrides?: (
 			originalElement: React.JSX.Element,
-			meta: FormFieldType<C, ZObject, Context>,
+			meta: FormFieldType<C, Z, Context>,
 		) => React.ReactNode;
 	};
 
 export type FormaField<
-	ZObject extends z.ZodObject<any> = z.ZodObject<any>,
+	Z extends z.ZodObject<any> = z.ZodObject<any>,
 	C extends Components = NonNullable<unknown>,
-	Context = any,
+	Context extends ContextType = ContextType,
 > =
 	| {
-			[K in keyof z.infer<ZObject>]: FormaFieldBase<ZObject, C, Context, K>;
-	  }[keyof z.infer<ZObject>]
+			[K in FieldName<Z>]: FormaFieldBase<Z, C, Context, K>;
+	  }[FieldName<Z>]
 	| SpacerType;
 
 type MaybePromise<T> = T | Promise<T>;
@@ -98,7 +149,7 @@ export interface AutoField<C extends Components = NonNullable<unknown>> {
 export type TransformedField<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
 	C extends Components = NonNullable<unknown>,
-	Context = any,
+	Context extends ContextType = ContextType,
 > = AutoField<C> &
 	Partial<
 		Omit<BaseField<Z, Context> & Omit<FormFieldType<C, Z, Context>, "name" | "type">, "name">
@@ -111,41 +162,42 @@ export type TransformedField<
 export type FieldTransformFunction<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
 	C extends Components = NonNullable<unknown>,
-	Context = any,
+	Context extends ContextType = ContextType,
 > = (fields: AutoField<C>[]) => TransformedField<Z, C, Context>[];
 
 export interface FieldObjectConfig<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
 	C extends Components = NonNullable<unknown>,
-	Context = any,
-	K extends keyof z.infer<Z> = keyof z.infer<Z>,
+	Context extends ContextType = ContextType,
+	Name extends FieldName<Z> = FieldName<Z>,
+	Watch extends FieldWatch<Z, Name> = FieldWatch<Z, Name>,
 > {
 	name?: string;
 	type?: FieldType<C>;
 	size?: Sizes;
-	watch?: FieldWatch<Z, K>;
-	disabled?: ValueOrFunction<boolean, FnArgs<Z, Context>>;
-	label?: ValueOrFunction<string | React.ReactNode, FnArgs<Z, Context>>;
-	placeholder?: ValueOrFunction<string, FnArgs<Z, Context>>;
-	description?: ValueOrFunction<string, FnArgs<Z, Context>>;
+	watch?: Watch;
+	disabled?: CustomProperty<boolean, Z, Context, Watch>;
+	label?: CustomProperty<React.ReactNode, Z, Context, Watch>;
+	placeholder?: CustomProperty<string, Z, Context, Watch>;
+	description?: CustomProperty<string, Z, Context, Watch>;
 	watchContext?: Context extends Record<string, any> ? (keyof Context)[] : string[];
 }
 
 export type FieldTransformValue<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
 	C extends Components = NonNullable<unknown>,
-	Context = any,
-	K extends keyof z.infer<Z> = keyof z.infer<Z>,
+	Context extends ContextType = ContextType,
+	Name extends FieldName<Z> = FieldName<Z>,
 > =
-	| FieldObjectConfig<Z, C, Context, K>
+	| FieldObjectConfig<Z, C, Context, Name>
 	| ((field: AutoField<C>) => Partial<TransformedField<Z, C, Context>> | undefined);
 
 export type FieldTransformObject<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
 	C extends Components = NonNullable<unknown>,
-	Context = any,
+	Context extends ContextType = ContextType,
 > = Partial<{
-	[K in keyof z.infer<Z>]:
+	[K in FieldName<Z>]:
 		| FieldObjectConfig<Z, C, Context, K>
 		| ((field: AutoField<C>) => Partial<TransformedField<Z, C, Context>> | undefined);
 }>;
@@ -158,7 +210,7 @@ export type FieldTransformer<
 export type FieldsConfig<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
 	C extends Components = NonNullable<unknown>,
-	Context = any,
+	Context extends ContextType = ContextType,
 > =
 	| FormaField<Z, C, Context>[]
 	| FieldTransformFunction<Z, C, Context>

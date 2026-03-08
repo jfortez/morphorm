@@ -7,7 +7,7 @@ import { memo, useEffect, useMemo } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
 
 import type { SubmitProps } from "./subtmit";
-import type { RowOverrides } from "../types";
+import type { ContextType, RowOverrides } from "../types";
 import type { Components, FieldsConfig, FormSubmitHandler, FormaField } from "../types";
 import type { InternalField } from "../util";
 
@@ -29,7 +29,11 @@ export interface FormState {
 	isSubmitting: boolean;
 }
 
-interface FormProps<Z extends z.ZodObject<any>, C extends Components, Context = any> {
+interface FormProps<
+	Z extends z.ZodObject<any>,
+	C extends Components,
+	Context extends ContextType = ContextType,
+> {
 	schema: Z;
 	initialValues?: z.input<Z>;
 	fields?: FieldsConfig<Z, C, Context>;
@@ -358,7 +362,7 @@ const RenderGrid = memo(
 export const Forma = <
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
 	C extends Components = NonNullable<unknown>,
-	Context = undefined,
+	Context extends ContextType = ContextType,
 >(
 	props: FormProps<Z, C, Context>,
 ) => {
