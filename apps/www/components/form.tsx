@@ -1,5 +1,6 @@
 "use client";
 import { Forma } from "morphorm";
+import "morphorm/styles.css";
 import * as z from "zod";
 
 const formSchema = z.object({
@@ -10,37 +11,58 @@ const formSchema = z.object({
 	fullName: z.string(),
 });
 
+const schema = z.object({
+	name: z.string(),
+	age: z.number(),
+	tasks: z.array(
+		z.object({
+			title: z.string(),
+			notes: z.string().optional(),
+			priority: z.string().optional(),
+		}),
+	),
+});
+
 export const FormWithArray = () => (
-	<div data-testid="form-array-container">
-		<Forma
-			schema={formSchema}
-			fields={[
-				{
-					name: "firstName",
-					label: "firstName",
-					placeholder: "firstName",
-					size: 6,
-					type: "text",
-				},
-				{
-					name: "lastName",
-					label: "lastName",
-					placeholder: "lastName",
-					size: 6,
-					type: "text",
-				},
-				{
-					name: "fullName",
-					label: "fullName",
-					placeholder: ({ fieldValues }) => `${fieldValues.firstName} ${fieldValues.lastName}`,
-					size: 12,
-					type: "text",
-					watch: ["firstName", "lastName"],
-					disabled: ({ fieldValues }) => !fieldValues.firstName && !fieldValues.lastName,
-				},
-			]}
-		/>
-	</div>
+	<Forma
+		schema={schema}
+		context={{ userRole: "admin" }}
+		fields={[
+			{
+				name: "name",
+				label: "Name",
+				type: "text",
+			},
+			{
+				name: "age",
+				label: "Age",
+				type: "number",
+				watch: ["name"],
+			},
+			{
+				name: "tasks.title",
+				label: "Task Title",
+				type: "text",
+			},
+			{
+				name: "tasks.notes",
+				label: "Task Notes",
+				type: "textarea",
+				watch: ["tasks.title"],
+				watchContext: ["userRole"],
+				disabled: ({ fieldValues }) => !fieldValues.tasks.title,
+				placeholder: ({ context }) =>
+					context?.userRole ? `Add notes for ${context.userRole}...` : "Add notes...",
+			},
+			{
+				name: "tasks.priority",
+				label: ({ context }) => (context?.userRole ? `Priority (${context.userRole})` : "Priority"),
+				type: "text",
+				watchContext: ["userRole"],
+			},
+		]}
+		showSubmit
+	/>
 );
 
 export const FormWithFunction = () => (

@@ -335,6 +335,7 @@
 .forma-form {
 	display: flex;
 	flex-direction: column;
+	width: 100%;
 }
 
 .forma-form--gap-2 {
