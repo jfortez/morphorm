@@ -130,6 +130,8 @@ export const CollapsibleContent = ({ children, className = "" }: CollapsibleCont
 		<div
 			className={`forma-collapsible__content ${className}`.trim()}
 			data-state={open ? "open" : "closed"}
+			hidden={!open}
+			aria-hidden={!open}
 		>
 			<div className="forma-collapsible__content-inner">{children}</div>
 		</div>

@@ -1,45 +1,153 @@
-/* ---- CSS Variables ---- */
 :root {
-	--forma-primary: #18181b;
-	--forma-primary-foreground: #fafafa;
-	--forma-secondary: #f4f4f5;
-	--forma-secondary-foreground: #18181b;
-	--forma-background: #ffffff;
-	--forma-foreground: #09090b;
-	--forma-muted: #f4f4f5;
-	--forma-muted-foreground: #71717a;
-	--forma-accent: #f4f4f5;
-	--forma-accent-foreground: #18181b;
-	--forma-destructive: #ef4444;
-	--forma-destructive-foreground: #fafafa;
-	--forma-border: #e4e4e7;
-	--forma-input: #e4e4e7;
-	--forma-ring: #18181b;
-	--forma-radius: 0.5rem;
-
-	/* Dark mode */
-	--forma-dark-background: #09090b;
-	--forma-dark-foreground: #fafafa;
-	--forma-dark-muted: #27272a;
-	--forma-dark-muted-foreground: #a1a1aa;
-	--forma-dark-accent: #27272a;
-	--forma-dark-border: #27272a;
-	--forma-dark-input: #27272a;
+	--forma-radius: var(--radius, 0.5rem);
+	--forma-background: var(--background, oklch(1 0 0));
+	--forma-foreground: var(--foreground, oklch(0.208 0.042 265.755));
+	--forma-card: var(--card, var(--forma-background));
+	--forma-card-foreground: var(--card-foreground, var(--forma-foreground));
+	--forma-popover: var(--popover, var(--forma-background));
+	--forma-popover-foreground: var(--popover-foreground, var(--forma-foreground));
+	--forma-primary: var(--primary, oklch(0.141 0.005 285.823));
+	--forma-primary-foreground: var(--primary-foreground, oklch(0.985 0 0));
+	--forma-secondary: var(--secondary, oklch(0.967 0.001 286.375));
+	--forma-secondary-foreground: var(--secondary-foreground, oklch(0.141 0.005 285.823));
+	--forma-muted: var(--muted, oklch(0.967 0.001 286.375));
+	--forma-muted-foreground: var(--muted-foreground, oklch(0.552 0.016 285.938));
+	--forma-accent: var(--accent, oklch(0.967 0.001 286.375));
+	--forma-accent-foreground: var(--accent-foreground, var(--forma-foreground));
+	--forma-destructive: var(--destructive, oklch(0.637 0.237 25.331));
+	--forma-destructive-foreground: var(--destructive-foreground, oklch(0.985 0 0));
+	--forma-border: var(--border, oklch(0.922 0.004 286.32));
+	--forma-input: var(--input, oklch(0.922 0.004 286.32));
+	--forma-ring: var(--ring, oklch(0.141 0.005 285.823));
 }
 
-/* ---- Reset & Base ---- */
+.formaRoot {
+	display: flex;
+	flex-direction: column;
+	gap: 1.5rem;
+	width: 100%;
+	color: var(--forma-foreground);
+}
+
+.formaLayout {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+
+.formaRows {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+
+.formaGridRow {
+	display: grid;
+	grid-template-columns: repeat(12, minmax(0, 1fr));
+	gap: 1rem;
+}
+
+.formaGridCol {
+	min-width: 0;
+	width: 100%;
+}
+
+.formaArray {
+	display: flex;
+	flex-direction: column;
+	gap: 0.625rem;
+	padding: 0.125rem;
+}
+
+.formaArrayBody {
+	display: flex;
+	flex-direction: column;
+	gap: 0.625rem;
+}
+
+.formaArrayHeader {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 0.625rem;
+}
+
+.formaArrayHeader .forma-collapsible__trigger {
+	min-height: 3rem;
+	padding: 0.875rem 1rem;
+	font-weight: 600;
+}
+
+.formaArrayContent {
+	border: 1px solid var(--forma-border);
+	border-radius: calc(var(--forma-radius) + 0.125rem);
+	background-color: var(--forma-card);
+}
+
+.formaArrayItems {
+	display: flex;
+	flex-direction: column;
+	gap: 0.875rem;
+}
+
+.formaArrayItem {
+	position: relative;
+	padding: 1rem;
+	border: 1px solid var(--forma-border);
+	border-radius: var(--forma-radius);
+	background-color: var(--forma-background);
+	box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+}
+
+.formaArrayItemAction {
+	position: absolute;
+	top: 0.625rem;
+	right: 0.625rem;
+	z-index: 2;
+}
+
+.formaArrayItem .formaGridRow {
+	padding-right: 2.5rem;
+}
+
+.formaArrayEmpty {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 5rem;
+	padding: 1.5rem;
+	text-align: center;
+}
+
+.formaArrayEmptyTitle {
+	font-size: 0.95rem;
+	font-weight: 600;
+	margin: 0;
+	color: var(--forma-card-foreground);
+}
+
+.formaArrayEmptyDescription {
+	font-size: 0.8125rem;
+	color: var(--forma-muted-foreground);
+}
+
+.formaIconSmall {
+	width: 0.75rem;
+	height: 0.75rem;
+}
+
 .forma-button,
 .forma-input,
+.forma-textarea,
+.forma-select,
+.forma-checkbox,
 .forma-label,
 .forma-field,
 .forma-collapsible {
 	box-sizing: border-box;
-	margin: 0;
-	padding: 0;
 	font-family: inherit;
 }
 
-/* ---- Button Component ---- */
 .forma-button {
 	display: inline-flex;
 	align-items: center;
@@ -48,33 +156,24 @@
 	padding: 0.5rem 1rem;
 	font-size: 0.875rem;
 	font-weight: 500;
-	line-height: 1.5;
+	line-height: 1.4;
 	border-radius: var(--forma-radius);
 	border: 1px solid transparent;
 	background-color: var(--forma-primary);
 	color: var(--forma-primary-foreground);
 	cursor: pointer;
-	transition: all 0.15s ease;
-	white-space: nowrap;
+	transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .forma-button:hover:not(:disabled) {
-	opacity: 0.9;
-}
-
-.forma-button:focus-visible {
-	outline: none;
-	box-shadow:
-		0 0 0 2px var(--forma-background),
-		0 0 0 4px var(--forma-ring);
+	filter: brightness(0.98);
 }
 
 .forma-button:disabled {
-	opacity: 0.5;
+	opacity: 0.6;
 	cursor: not-allowed;
 }
 
-/* Button Variants */
 .forma-button--secondary {
 	background-color: var(--forma-secondary);
 	color: var(--forma-secondary-foreground);
@@ -84,10 +183,6 @@
 	background-color: transparent;
 	border-color: var(--forma-input);
 	color: var(--forma-foreground);
-}
-
-.forma-button--outline:hover:not(:disabled) {
-	background-color: var(--forma-accent);
 }
 
 .forma-button--destructive {
@@ -100,124 +195,74 @@
 	color: var(--forma-foreground);
 }
 
-.forma-button--ghost:hover:not(:disabled) {
-	background-color: var(--forma-accent);
-}
-
-/* Button Sizes */
 .forma-button--sm {
+	height: 2rem;
 	padding: 0.375rem 0.75rem;
 	font-size: 0.75rem;
-	height: 2rem;
 }
 
 .forma-button--icon {
-	padding: 0;
 	width: 2.25rem;
 	height: 2.25rem;
+	padding: 0;
 }
 
 .forma-button--icon-sm {
-	padding: 0;
 	width: 1.75rem;
 	height: 1.75rem;
+	padding: 0;
 }
 
-/* ---- Label Component ---- */
 .forma-label {
 	display: block;
 	font-size: 0.875rem;
 	font-weight: 500;
 	line-height: 1.5;
 	color: var(--forma-foreground);
-	margin-bottom: 0.5rem;
 }
 
 .forma-label--error {
 	color: var(--forma-destructive);
 }
 
-/* ---- Input Component ---- */
-.forma-input {
-	display: flex;
+.forma-input,
+.forma-textarea,
+.forma-select {
 	width: 100%;
-	height: 2.5rem;
-	padding: 0 0.75rem;
 	font-size: 0.875rem;
 	line-height: 1.5;
 	color: var(--forma-foreground);
 	background-color: var(--forma-background);
 	border: 1px solid var(--forma-input);
 	border-radius: var(--forma-radius);
-	transition: all 0.15s ease;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.forma-input:hover {
-	border-color: var(--forma-border);
+.forma-input,
+.forma-select {
+	height: 2.5rem;
+	padding: 0 0.75rem;
 }
 
-.forma-input:focus {
-	outline: none;
-	border-color: var(--forma-ring);
-	box-shadow: 0 0 0 1px var(--forma-ring);
-}
-
-.forma-input:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
-}
-
-.forma-input::placeholder {
-	color: var(--forma-muted-foreground);
-}
-
-/* Textarea */
 .forma-textarea {
-	min-height: 5rem;
+	min-height: 6rem;
 	padding: 0.75rem;
 	resize: vertical;
 }
 
-/* ---- Input Group ---- */
-.forma-input-group {
-	display: flex;
-	align-items: center;
-	position: relative;
-	width: 100%;
+.forma-input:focus,
+.forma-textarea:focus,
+.forma-select:focus {
+	outline: none;
+	border-color: var(--forma-ring);
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--forma-ring) 25%, transparent);
 }
 
-.forma-input-group .forma-input {
-	flex: 1;
+.forma-checkbox {
+	width: 1rem;
+	height: 1rem;
 }
 
-.forma-input-group__addon {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	padding: 0 0.75rem;
-	color: var(--forma-muted-foreground);
-	background-color: var(--forma-muted);
-	border: 1px solid var(--forma-input);
-	border-left: none;
-	border-radius: 0 var(--forma-radius) var(--forma-radius) 0;
-}
-
-.forma-input-group__addon--start {
-	border-left: 1px solid var(--forma-input);
-	border-right: none;
-	border-radius: var(--forma-radius) 0 0 var(--forma-radius);
-}
-
-.forma-input-group__addon--block-end {
-	position: absolute;
-	bottom: 0.5rem;
-	right: 0.5rem;
-	background: transparent;
-	border: none;
-	padding: 0.25rem;
-}
-
-/* ---- Field Component ---- */
 .forma-field {
 	display: flex;
 	flex-direction: column;
@@ -227,30 +272,35 @@
 .forma-field__label {
 	font-size: 0.875rem;
 	font-weight: 500;
-	color: var(--forma-foreground);
 }
 
 .forma-field__description {
 	font-size: 0.75rem;
 	color: var(--forma-muted-foreground);
-	margin-top: 0.25rem;
 }
 
 .forma-field__error {
 	font-size: 0.75rem;
 	color: var(--forma-destructive);
-	margin-top: 0.25rem;
 }
 
-.forma-field--error .forma-input {
+.forma-field--error .forma-input,
+.forma-field--error .forma-textarea,
+.forma-field--error .forma-select {
 	border-color: var(--forma-destructive);
 }
 
-.forma-field--error .forma-input:focus {
-	box-shadow: 0 0 0 1px var(--forma-destructive);
+.forma-submit {
+	display: flex;
+	flex-direction: column-reverse;
+	gap: 0.5rem;
+	width: 100%;
 }
 
-/* ---- Collapsible Component ---- */
+.forma-submit .forma-button {
+	width: 100%;
+}
+
 .forma-collapsible {
 	width: 100%;
 }
@@ -261,49 +311,40 @@
 	justify-content: space-between;
 	width: 100%;
 	padding: 0.75rem 1rem;
-	font-size: 0.875rem;
-	font-weight: 500;
-	color: var(--forma-foreground);
-	background-color: var(--forma-background);
 	border: 1px solid var(--forma-border);
 	border-radius: var(--forma-radius);
+	background-color: var(--forma-background);
+	color: var(--forma-foreground);
 	cursor: pointer;
-	transition: all 0.15s ease;
+	transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .forma-collapsible__trigger:hover {
-	background-color: var(--forma-accent);
+	background-color: color-mix(in srgb, var(--forma-accent) 45%, transparent);
 }
 
-.forma-collapsible__trigger[aria-expanded="true"] {
-	border-bottom-left-radius: 0;
-	border-bottom-right-radius: 0;
+.forma-collapsible__icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.forma-collapsible__icon--open {
+	transform: rotate(180deg);
 }
 
 .forma-collapsible__content {
 	overflow: hidden;
-	transition:
-		max-height 0.2s ease,
-		opacity 0.2s ease;
-	max-height: 0;
-	opacity: 0;
 }
 
-.forma-collapsible__content[data-state="open"] {
-	max-height: 1000px;
-	opacity: 1;
+.forma-collapsible__content[data-state="closed"] {
+	display: none;
 }
 
 .forma-collapsible__content-inner {
-	padding: 1rem;
-	background-color: var(--forma-background);
-	border: 1px solid var(--forma-border);
-	border-top: none;
-	border-bottom-left-radius: var(--forma-radius);
-	border-bottom-right-radius: var(--forma-radius);
+	padding: 0.625rem;
 }
 
-/* ---- Spinner Component ---- */
 @keyframes forma-spin {
 	to {
 		transform: rotate(360deg);
@@ -316,14 +357,13 @@
 	height: 1rem;
 	border: 2px solid var(--forma-border);
 	border-top-color: var(--forma-foreground);
-	border-radius: 50%;
+	border-radius: 999px;
 	animation: forma-spin 0.6s linear infinite;
 }
 
 .forma-spinner--sm {
 	width: 0.75rem;
 	height: 0.75rem;
-	border-width: 1.5px;
 }
 
 .forma-spinner--lg {
@@ -331,220 +371,27 @@
 	height: 1.5rem;
 }
 
-/* ---- Form Layout Utilities ---- */
-.forma-form {
-	display: flex;
-	flex-direction: column;
-	width: 100%;
+@media (max-width: 768px) {
+	.formaGridRow {
+		gap: 0.75rem;
+	}
+
+	.formaArrayHeader {
+		grid-template-columns: 1fr;
+	}
+
+	.formaArrayItem {
+		padding: 0.875rem;
+	}
+
+	.formaArrayItem .formaGridRow {
+		padding-right: 0;
+	}
+
+	.formaArrayItemAction {
+		position: static;
+		margin-left: auto;
+		margin-bottom: 0.5rem;
+	}
 }
 
-.forma-form--gap-2 {
-	gap: 0.5rem;
-}
-
-.forma-form--gap-4 {
-	gap: 1rem;
-}
-
-.forma-form--gap-6 {
-	gap: 1.5rem;
-}
-
-.forma-row {
-	display: grid;
-	grid-template-columns: repeat(12, 1fr);
-	gap: 1rem;
-}
-
-.forma-col {
-	width: 100%;
-}
-
-/* ---- Flex Utilities ---- */
-.forma-flex {
-	display: flex;
-}
-
-.forma-flex--col {
-	flex-direction: column;
-}
-
-.forma-flex--gap-2 {
-	gap: 0.5rem;
-}
-
-.forma-flex--gap-3 {
-	gap: 0.75rem;
-}
-
-.forma-flex--gap-4 {
-	gap: 1rem;
-}
-
-.forma-flex--gap-6 {
-	gap: 1.5rem;
-}
-
-.forma-flex--items-center {
-	align-items: center;
-}
-
-.forma-flex--justify-between {
-	justify-content: space-between;
-}
-
-.forma-flex--justify-end {
-	justify-content: flex-end;
-}
-
-.forma-flex--justify-center {
-	justify-content: center;
-}
-
-/* ---- Array/List Styles ---- */
-.forma-array-item {
-	position: relative;
-	padding: 1rem;
-	border: 1px solid var(--forma-border);
-	border-radius: var(--forma-radius);
-	transition: background-color 0.15s ease;
-}
-
-.forma-array-item:hover {
-	background-color: var(--forma-accent);
-}
-
-.forma-array-item__actions {
-	position: absolute;
-	top: 0.5rem;
-	right: 0.5rem;
-	opacity: 0;
-	transition: opacity 0.15s ease;
-}
-
-.forma-array-item:hover .forma-array-item__actions {
-	opacity: 1;
-}
-
-.forma-array-empty {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	min-height: 5rem;
-	padding: 1.5rem;
-	text-align: center;
-}
-
-.forma-array-empty__title {
-	font-size: 1.125rem;
-	font-weight: 500;
-	color: var(--forma-foreground);
-	margin-bottom: 0.25rem;
-}
-
-.forma-array-empty__description {
-	font-size: 0.875rem;
-	color: var(--forma-muted-foreground);
-}
-
-/* ---- Submit Section ---- */
-.forma-submit {
-	display: flex;
-	flex-direction: column-reverse;
-	gap: 0.5rem;
-	width: 100%;
-}
-
-.forma-submit--horizontal {
-	flex-direction: row;
-}
-
-.forma-submit .forma-button {
-	width: 100%;
-}
-
-/* ---- Group Styles ---- */
-.forma-group {
-	border-radius: var(--forma-radius);
-	padding: 0.75rem;
-	transition: background-color 0.15s ease;
-}
-
-.forma-group:hover {
-	background-color: rgba(0, 0, 0, 0.03);
-}
-
-[data-theme="dark"] .forma-group:hover {
-	background-color: rgba(255, 255, 255, 0.03);
-}
-
-/* ---- Size Utilities ---- */
-.forma-size-3 {
-	width: 0.75rem;
-	height: 0.75rem;
-}
-
-.forma-size-4 {
-	width: 1rem;
-	height: 1rem;
-}
-
-.forma-size-7 {
-	width: 1.75rem;
-	height: 1.75rem;
-}
-
-/* ---- Background Utilities ---- */
-.forma-bg-background {
-	background-color: var(--forma-background);
-}
-
-.forma-bg-accent-hover:hover {
-	background-color: var(--forma-accent);
-}
-
-/* ---- Text Utilities ---- */
-.forma-text-center {
-	text-align: center;
-}
-
-.forma-text-sm {
-	font-size: 0.875rem;
-}
-
-.forma-text-lg {
-	font-size: 1.125rem;
-}
-
-.forma-font-medium {
-	font-weight: 500;
-}
-
-.forma-text-muted {
-	color: var(--forma-muted-foreground);
-}
-
-/* ---- Width Utilities ---- */
-.forma-w-full {
-	width: 100%;
-}
-
-/* ---- Focus/Accessibility ---- */
-.forma-sr-only {
-	position: absolute;
-	width: 1px;
-	height: 1px;
-	padding: 0;
-	margin: -1px;
-	overflow: hidden;
-	clip: rect(0, 0, 0, 0);
-	white-space: nowrap;
-	border: 0;
-}
-
-/* ---- Icon Sizes ---- */
-.forma-icon-sm {
-	width: 0.75rem;
-	height: 0.75rem;
-}

@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 import { Forma } from "./morphorm";
+import { generateGrid } from "../core/layout";
 import * as z from "zod";
 
 const basicSchema = z.object({
@@ -20,6 +21,55 @@ describe("FormKit", () => {
 
 	afterEach(() => {
 		cleanup();
+	});
+
+	describe("Grid Generation", () => {
+		it("uses default size 12 when field size is undefined", () => {
+			const rows = generateGrid([
+				{
+					mode: "value",
+					name: "name",
+					schema: [],
+					type: "text",
+				},
+			] as any);
+
+			expect(rows).toHaveLength(1);
+			expect(rows[0]![0]!.size).toBe(12);
+			expect(rows[0]!).toHaveLength(1);
+		});
+
+		it("creates filler placeholder and starts a new row when using spacer type fill", () => {
+			const rows = generateGrid([
+				{
+					mode: "value",
+					name: "first",
+					schema: [],
+					size: 3,
+					type: "text",
+				},
+				{
+					type: "fill",
+				},
+				{
+					mode: "value",
+					name: "second",
+					schema: [],
+					size: 6,
+					type: "text",
+				},
+			] as any);
+
+			expect(rows).toHaveLength(2);
+			expect(rows[0]![0]!.name).toBe("first");
+			expect(rows[0]![0]!.size).toBe(3);
+			expect(rows[0]![1]!.type).toBe("hidden");
+			expect(rows[0]![1]!.size).toBe(9);
+			expect(rows[1]![0]!.name).toBe("second");
+			expect(rows[1]![0]!.size).toBe(6);
+			expect(rows[1]![1]!.type).toBe("hidden");
+			expect(rows[1]![1]!.size).toBe(6);
+		});
 	});
 
 	describe("Basic Rendering", () => {
@@ -1406,6 +1456,154 @@ describe("FormKit", () => {
 			});
 		});
 
+		it("subscribes array watch to sibling value of the same index only", async () => {
+			const schema = z.object({
+				tasks: z.array(
+					z.object({
+						title: z.string(),
+						notes: z.string().optional(),
+					}),
+				),
+			});
+
+			const user = userEvent.setup();
+
+			render(
+				<Forma
+					schema={schema}
+					initialValues={{
+						tasks: [
+							{ title: "", notes: "" },
+							{ title: "", notes: "" },
+						],
+					}}
+					fields={[
+						{ name: "tasks.title", type: "text", label: "Task Title" },
+						{
+							name: "tasks.notes",
+							type: "textarea",
+							label: "Task Notes",
+							watch: ["tasks.title"],
+							disabled: ({ fieldValues }) => !fieldValues.tasks.title,
+						},
+					]}
+					onSubmit={mockSubmit}
+					showSubmit
+				/>,
+			);
+
+			const title0 = screen.getByTestId("input-tasks[0].title") as HTMLInputElement;
+			const title1 = screen.getByTestId("input-tasks[1].title") as HTMLInputElement;
+			const notes0 = screen.getByTestId("textarea-tasks[0].notes") as HTMLTextAreaElement;
+			const notes1 = screen.getByTestId("textarea-tasks[1].notes") as HTMLTextAreaElement;
+
+			expect(notes0.disabled).toBe(true);
+			expect(notes1.disabled).toBe(true);
+
+			await user.type(title0, "Item 0 title");
+			await waitFor(() => {
+				expect(notes0.disabled).toBe(false);
+			});
+			expect(notes1.disabled).toBe(true);
+
+			await user.type(title1, "Item 1 title");
+			await waitFor(() => {
+				expect(notes1.disabled).toBe(false);
+			});
+
+			await user.clear(title0);
+			await waitFor(() => {
+				expect(notes0.disabled).toBe(true);
+			});
+			expect(notes1.disabled).toBe(false);
+		});
+
+		it("does not recompute array watch field when unrelated non-array field changes", async () => {
+			const schema = z.object({
+				name: z.string(),
+				tasks: z.array(
+					z.object({
+						title: z.string(),
+						notes: z.string().optional(),
+					}),
+				),
+			});
+
+			const user = userEvent.setup();
+			const notesDisabledSpy = vi.fn(({ fieldValues }: any) => !fieldValues.tasks.title);
+
+			render(
+				<Forma
+					schema={schema}
+					initialValues={{
+						name: "",
+						tasks: [
+							{ title: "", notes: "" },
+							{ title: "", notes: "" },
+						],
+					}}
+					fields={[
+						{ name: "name", type: "text", label: "Name" },
+						{ name: "tasks.title", type: "text", label: "Task Title" },
+						{
+							name: "tasks.notes",
+							type: "textarea",
+							label: "Task Notes",
+							watch: ["tasks.title"],
+							disabled: notesDisabledSpy,
+						},
+					]}
+					onSubmit={mockSubmit}
+					showSubmit
+				/>,
+			);
+
+			const initialCalls = notesDisabledSpy.mock.calls.length;
+			const nameInput = screen.getByTestId("input-name");
+
+			await user.type(nameInput, "A");
+			await waitFor(() => {
+				expect(nameInput).toHaveValue("A");
+			});
+
+			expect(notesDisabledSpy.mock.calls.length).toBe(initialCalls);
+		});
+		it("does not render orphan scalar field when using array child path in fields config", async () => {
+			const schema = z.object({
+				name: z.string(),
+				tasks: z.array(
+					z.object({
+						title: z.string(),
+					}),
+				),
+			});
+
+			const user = userEvent.setup();
+
+			render(
+				<Forma<typeof schema>
+					schema={schema}
+					fields={[
+						{ name: "name", type: "text", label: "Name" },
+						{ name: "tasks.title", type: "text", label: "Task Title" },
+					]}
+					onSubmit={mockSubmit}
+					showSubmit
+				/>,
+			);
+
+			expect(screen.queryByTestId("field-tasks.title")).not.toBeInTheDocument();
+
+			const addButton = screen.getByText(/add tasks/i);
+			await user.click(addButton);
+
+			await waitFor(() => {
+				expect(screen.getByTestId("field-tasks[0].title")).toBeInTheDocument();
+			});
+
+			expect(screen.queryByTestId("field-tasks.title")).not.toBeInTheDocument();
+			expect(screen.getAllByTestId("field-tasks[0].title")).toHaveLength(1);
+		});
 		it("handles personal profile with full name tracking, privilege context, and two array groups", async () => {
 			const schema = z.object({
 				firstName: z.string(),

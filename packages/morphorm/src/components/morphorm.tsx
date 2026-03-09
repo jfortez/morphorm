@@ -9,7 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collap
 import type { SubmitProps } from "./subtmit";
 import type { ContextType, RowOverrides } from "../types";
 import type { Components, FieldsConfig, FormSubmitHandler, FormaField } from "../types";
-import type { InternalField } from "../util";
+import type { FormNode, ResolvedFieldConfig } from "../core/render-model";
 
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
@@ -18,9 +18,11 @@ import { FormComponentsProvider, useFormKit } from "./form-context";
 import FormField from "./form-field";
 import { useAppForm } from "./form-hook";
 import { SubmitButton } from "./subtmit";
-import { generateGrid, parseFields } from "../util";
+import { parseFields } from "../core/layout";
 import { ZodProvider } from "@morphorm/core/zod";
 import { PlusIcon, TrashIcon } from "./ui/icons";
+import { buildArrayItemFields, buildRenderModel, normalizeFields } from "../core/render-model";
+import { createStableWatchSelector } from "../core/watch";
 import "./styles.css";
 
 export interface FormState {
@@ -50,10 +52,9 @@ interface FormProps<
 }
 
 interface RenderGridProps {
-	parsedFields: InternalField[];
+	nodes: FormNode[];
 	rowOverrides?: RowOverrides<z.ZodObject<any>, Components>;
 	rowChildren?: React.ReactNode;
-	fieldsConfig?: InternalField[];
 }
 
 const getDefaultsByType = (type: string) => {
@@ -65,18 +66,17 @@ const getDefaultsByType = (type: string) => {
 	return map[type as keyof typeof map];
 };
 
-const getDefaultValues = (parsedFields: InternalField[]) =>
-	parsedFields.reduce(
+const getDefaultValues = (template: ResolvedFieldConfig[]) =>
+	template.reduce(
 		(acc, field) => {
-			acc[field.name] = getDefaultsByType(field.type);
+			acc[field.resolvedName] = getDefaultsByType(field.type);
 			return acc;
 		},
 		{} as Record<string, unknown>,
 	);
 
 interface ContextAwareFieldProps {
-	col: InternalField;
-	mode: "value" | "array";
+	field: ResolvedFieldConfig;
 }
 
 const getLabelString = (label: unknown): string => {
@@ -86,173 +86,71 @@ const getLabelString = (label: unknown): string => {
 	return "";
 };
 
-const normalizePathSegments = (path: string): string[] => {
-	return path
-		.replace(/\[(\d+)\]/g, ".$1")
-		.split(".")
-		.filter(Boolean);
-};
-
-const getValueByPath = (source: Record<string, unknown> | undefined, path: string): unknown => {
-	if (!source) {
-		return undefined;
-	}
-
-	const segments = normalizePathSegments(path);
-	let current: unknown = source;
-
-	for (const segment of segments) {
-		if (current === null || typeof current !== "object") {
-			return undefined;
-		}
-		current = (current as Record<string, unknown>)[segment];
-	}
-
-	return current;
-};
-
-const setValueByPath = (
-	target: Record<string, unknown>,
-	path: string,
-	value: unknown,
-): Record<string, unknown> => {
-	const segments = normalizePathSegments(path);
-	if (segments.length === 0) {
-		return target;
-	}
-
-	let current: Record<string, unknown> = target;
-	for (let index = 0; index < segments.length - 1; index++) {
-		const segment = segments[index]!;
-		const next = current[segment];
-		if (!next || typeof next !== "object") {
-			current[segment] = {};
-		}
-		current = current[segment] as Record<string, unknown>;
-	}
-
-	current[segments[segments.length - 1]!] = value;
-	return target;
-};
-
-const resolveWatchPathForField = (watchPath: string, fieldPath: string): string => {
-	const fieldMatch = /^([^[.\]]+)\[(\d+)\]/.exec(fieldPath);
-	if (!fieldMatch || watchPath.includes("[")) {
-		return watchPath;
-	}
-
-	const arrayRoot = fieldMatch[1]!;
-	const arrayIndex = fieldMatch[2]!;
-	if (watchPath === arrayRoot) {
-		return `${arrayRoot}[${arrayIndex}]`;
-	}
-	if (watchPath.startsWith(`${arrayRoot}.`)) {
-		return `${arrayRoot}[${arrayIndex}]${watchPath.slice(arrayRoot.length)}`;
-	}
-
-	return watchPath;
-};
-
 interface ArrayFieldProps {
-	col: InternalField;
-	nestedFields?: InternalField[];
-	fieldsConfig?: InternalField[];
+	arrayField: ResolvedFieldConfig;
+	itemTemplate: ResolvedFieldConfig[];
 }
-const ArrayField = memo(({ col, nestedFields = [], fieldsConfig = [] }: ArrayFieldProps) => {
+
+const ArrayField = memo(({ arrayField, itemTemplate }: ArrayFieldProps) => {
 	const form = useFormContext() as unknown as ReturnType<typeof useAppForm>;
+	const defaultValues = useMemo(() => getDefaultValues(itemTemplate), [itemTemplate]);
 
-	const schema = col.schema![0]!.schema!;
-	const arrayFieldConfig = fieldsConfig
-		.filter((f) => f.name.startsWith(`${col.name}.`))
-		.map((f) => ({ ...f, name: f.name.replace(`${col.name}.`, "") }));
-
-	const hasCustomArrayConfig = arrayFieldConfig.length > 0;
-	const fieldsAsObject = arrayFieldConfig.reduce(
-		(acc, f) => {
-			const {
-				name,
-				arrayPath: _arrayPath,
-				mode: _mode,
-				schema: _schema,
-				...fieldConfig
-			} = f as InternalField & Record<string, unknown>;
-			acc[name] = fieldConfig;
-			return acc;
-		},
-		{} as Record<string, any>,
-	);
-
-	const autoNestedFields = useMemo(
-		() => parseFields(hasCustomArrayConfig ? fieldsAsObject : undefined, schema),
-		[schema, hasCustomArrayConfig, fieldsAsObject],
-	);
-	const defaultValues = useMemo(() => getDefaultValues(autoNestedFields), [autoNestedFields]);
-
-	const allNestedFields = useMemo(() => {
-		if (hasCustomArrayConfig) {
-			return autoNestedFields;
-		}
-		return [...autoNestedFields, ...nestedFields];
-	}, [autoNestedFields, nestedFields, hasCustomArrayConfig]);
-
-	if (allNestedFields.length === 0) {
+	if (itemTemplate.length === 0) {
 		return null;
 	}
 
 	return (
-		<div className="forma-group">
+		<div className="formaArray">
 			<Collapsible defaultOpen>
 				<form.AppField
-					name={col.name as never}
+					name={arrayField.name as never}
 					mode="array"
 				>
 					{(field) => {
 						const items = (field.state.value as unknown[]) || [];
 
 						return (
-							<div className="forma-flex forma-flex--col forma-flex--gap-2">
-								<div className="forma-bg-background forma-flex forma-flex--items-center forma-flex--justify-between">
+							<div className="formaArrayBody">
+								<div className="formaArrayHeader">
 									<CollapsibleTrigger>
-										<Label>{getLabelString(col.label)}</Label>
+										<Label>{getLabelString(arrayField.label)}</Label>
 									</CollapsibleTrigger>
 									<Button
 										type="button"
-										data-testid={`add-${col.name}`}
+										data-testid={`add-${arrayField.name}`}
 										onClick={() => field.pushValue(defaultValues as never)}
 										size="sm"
 									>
 										<PlusIcon />
-										Add {getLabelString(col.label)}
+										Add {getLabelString(arrayField.label)}
 									</Button>
 								</div>
 
-								<CollapsibleContent className="forma-group forma-bg-accent-hover forma-bg-background">
+								<CollapsibleContent className="formaArrayContent">
 									{items.length === 0 ? (
-										<div className="forma-array-empty">
+										<div className="formaArrayEmpty">
 											<div>
-												<h3 className="forma-array-empty__title">No items</h3>
-												<span className="forma-array-empty__description">
+												<h3 className="formaArrayEmptyTitle">No items</h3>
+												<span className="formaArrayEmptyDescription">
 													Click the + button to get started
 												</span>
 											</div>
 										</div>
 									) : (
-										<div className="forma-flex forma-flex--col forma-flex--gap-3">
+										<div className="formaArrayItems">
 											{items.map((_, idx) => {
-												const parsedFields = allNestedFields.map((item: InternalField) => ({
-													...item,
-													name: `${col.name}[${idx}].${item.name}`,
-												}));
-
-												const handleRemoveItem = () => {
-													field.removeValue(idx);
-												};
+												const parsedFields = buildArrayItemFields(
+													arrayField.name,
+													idx,
+													itemTemplate,
+												);
+												const handleRemoveItem = () => field.removeValue(idx);
 
 												return (
 													<ArrayFieldItem
 														key={idx}
 														onRemove={handleRemoveItem}
-														parsedFields={parsedFields}
+														fields={parsedFields}
 													/>
 												);
 											})}
@@ -269,63 +167,59 @@ const ArrayField = memo(({ col, nestedFields = [], fieldsConfig = [] }: ArrayFie
 });
 
 interface ArrayFieldItemProps {
-	parsedFields: InternalField[];
+	fields: ResolvedFieldConfig[];
 	onRemove: () => void;
 }
 
-const ArrayFieldItem = memo(({ parsedFields, onRemove }: ArrayFieldItemProps) => {
+const ArrayFieldItem = memo(({ fields, onRemove }: ArrayFieldItemProps) => {
+	const nodes = useMemo<FormNode[]>(
+		() => fields.map((field) => ({ kind: "scalar", field })),
+		[fields],
+	);
+
 	return (
-		<div className="forma-array-item">
+		<div className="formaArrayItem">
 			<Button
 				type="button"
-				className="forma-array-item__actions forma-button--icon-sm"
+				className="formaArrayItemAction"
 				variant="destructive"
 				size="icon-sm"
 				onClick={onRemove}
 			>
-				<TrashIcon className="forma-icon-sm" />
+				<TrashIcon className="formaIconSmall" />
 			</Button>
-			<RenderGrid parsedFields={parsedFields} />
+			<RenderGrid nodes={nodes} />
 		</div>
 	);
 });
 
-const ContextAwareField = ({ col, mode }: ContextAwareFieldProps) => {
+const ContextAwareField = ({ field }: ContextAwareFieldProps) => {
 	const form = useFormContext() as unknown as ReturnType<typeof useAppForm>;
 	const { context } = useFormKit();
 
-	const hasWatch = col.watch && col.watch.length > 0;
-	const hasWatchContext = col.watchContext && col.watchContext.length > 0;
+	const hasWatch = field.watch && field.watch.length > 0;
+	const hasWatchContext = field.watchContext && field.watchContext.length > 0;
 
 	const slicedContext = useMemo(() => {
 		if (!hasWatchContext) {
 			return undefined;
 		}
-
-		return col.watchContext!.reduce((acc, key) => ({ ...acc, [key]: context?.[key] }), {} as any);
-	}, [context, hasWatchContext, col.watchContext]);
-
-	if (mode === "array") {
-		return <ArrayField col={col} />;
-	}
+		return field.watchContext!.reduce((acc, key) => ({ ...acc, [key]: context?.[key] }), {} as any);
+	}, [context, hasWatchContext, field.watchContext]);
 
 	if (hasWatch) {
-		const watchSelector = (state: any) => {
-			const values: Record<string, unknown> = {};
-			for (const key of col.watch!) {
-				const resolvedPath = resolveWatchPathForField(key, col.name);
-				const watchedValue = getValueByPath(state.values, resolvedPath);
-				setValueByPath(values, key, watchedValue);
-			}
-			return values;
-		};
+		const watchSelector = useMemo(
+			() => createStableWatchSelector(field.watch!, field.name),
+			[field.name, field.watch],
+		);
+
 		return (
 			<form.Subscribe selector={watchSelector}>
 				{(watchedValues) => (
-					<form.AppField name={col.name as never}>
+					<form.AppField name={field.name as never}>
 						{() => (
 							<FormField
-								metadata={col as unknown as any}
+								metadata={field as unknown as any}
 								context={slicedContext}
 								fieldValues={watchedValues}
 							/>
@@ -337,10 +231,10 @@ const ContextAwareField = ({ col, mode }: ContextAwareFieldProps) => {
 	}
 
 	return (
-		<form.AppField name={col.name as never}>
+		<form.AppField name={field.name as never}>
 			{() => (
 				<FormField
-					metadata={col as unknown as any}
+					metadata={field as unknown as any}
 					context={slicedContext}
 					fieldValues={{}}
 				/>
@@ -349,94 +243,52 @@ const ContextAwareField = ({ col, mode }: ContextAwareFieldProps) => {
 	);
 };
 
-const RenderGrid = memo(
-	({ parsedFields, rowOverrides, rowChildren, fieldsConfig = [] }: RenderGridProps) => {
-		const rowFields = useMemo(() => generateGrid(parsedFields), [parsedFields]);
+const RenderGrid = memo(({ nodes, rowOverrides, rowChildren }: RenderGridProps) => {
+	const rows = useMemo(() => buildRenderModel(nodes), [nodes]);
 
-		const nestedFieldsByArray = useMemo(() => {
-			const map = new Map<string, InternalField[]>();
-			for (const field of parsedFields) {
-				if (field.arrayPath) {
-					const existing = map.get(field.arrayPath) || [];
-					existing.push(field);
-					map.set(field.arrayPath, existing);
-				}
-			}
-			return map;
-		}, [parsedFields]);
-
-		return (
-			<div className="forma-flex forma-flex--col forma-flex--gap-4">
-				<div className="forma-flex forma-flex--col forma-flex--gap-4">
-					{rowFields.map((row, index) => {
-						const regularFields = row.filter(
-							(col) => col.type !== "hidden" && col.mode !== "array" && !col.arrayPath,
-						);
-						const arrayFields = row.filter(
-							(col) => col.type !== "hidden" && (col.mode === "array" || col.arrayPath),
-						);
-
-						const renderGrid = (
-							<div className="forma-row">
-								{regularFields.map((col) => (
-									<div
-										key={col.name}
-										className="forma-col"
-										style={{
-											gridColumn: `span ${col.size} / span ${col.size}`,
-										}}
-									>
-										{col.type !== "hidden" && (
-											<ContextAwareField
-												col={col}
-												mode={col.mode}
-											/>
-										)}
-									</div>
-								))}
-								{arrayFields.map((col) => {
-									const nestedFields = nestedFieldsByArray.get(col.name) || [];
-									return (
-										<div
-											key={col.name}
-											className="forma-col"
-											style={{
-												gridColumn: `span ${col.size} / span ${col.size}`,
-											}}
-										>
-											{col.mode === "array" && (
-												<ArrayField
-													col={col}
-													nestedFields={nestedFields}
-													fieldsConfig={fieldsConfig}
-												/>
-											)}
-										</div>
-									);
-								})}
-							</div>
-						);
-
-						if (rowOverrides) {
-							return (
-								<div key={`row-${index + 1}`}>
-									{rowOverrides(
-										renderGrid,
-										index,
-										regularFields as unknown as FormaField<z.ZodObject<any>, Components>[],
+	return (
+		<div className="formaLayout">
+			<div className="formaRows">
+				{rows.map((row, rowIndex) => {
+					const renderGrid = (
+						<div className="formaGridRow">
+							{row.map((node) => (
+								<div
+									key={node.field.name}
+									className="formaGridCol"
+									style={{
+										gridColumn: `span ${node.field.size} / span ${node.field.size}`,
+									}}
+								>
+									{node.kind === "scalar" && <ContextAwareField field={node.field} />}
+									{node.kind === "array" && (
+										<ArrayField
+											arrayField={node.field}
+											itemTemplate={node.itemTemplate}
+										/>
 									)}
 								</div>
-							);
-						}
+							))}
+						</div>
+					);
 
-						return <div key={`row-${index + 1}`}>{renderGrid}</div>;
-					})}
-					{rowChildren}
-				</div>
+					if (rowOverrides) {
+						const fields = row
+							.filter((node) => node.kind !== "placeholder")
+							.map((node) => node.field) as unknown as FormaField<z.ZodObject<any>, Components>[];
+
+						return (
+							<div key={`row-${rowIndex + 1}`}>{rowOverrides(renderGrid, rowIndex, fields)}</div>
+						);
+					}
+
+					return <div key={`row-${rowIndex + 1}`}>{renderGrid}</div>;
+				})}
+				{rowChildren}
 			</div>
-		);
-	},
-);
+		</div>
+	);
+});
 
 export const Forma = <
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
@@ -464,9 +316,10 @@ export const Forma = <
 	const schemaProvider = useMemo(() => new ZodProvider(schema), [schema]);
 	const parsedFields = useMemo(() => {
 		const parsed = schemaProvider.parseSchema();
-
 		return parseFields(fields, parsed.fields);
 	}, [schemaProvider, fields]);
+
+	const normalizedNodes = useMemo(() => normalizeFields(parsedFields), [parsedFields]);
 
 	const defaultValues = useMemo<z.input<Z>>(() => {
 		if (initialValues) {
@@ -516,12 +369,11 @@ export const Forma = <
 	return (
 		<FormComponentsProvider value={{ components, context, schema: parsedFields }}>
 			<form.AppForm>
-				<Form className="forma-form forma-form--gap-6">
+				<Form className="formaRoot">
 					<RenderGrid
-						parsedFields={parsedFields}
+						nodes={normalizedNodes}
 						rowOverrides={rowOverrides as never}
 						rowChildren={rowChildren}
-						fieldsConfig={parsedFields}
 					/>
 					{showSubmit && (
 						<SubmitButton
@@ -535,4 +387,5 @@ export const Forma = <
 		</FormComponentsProvider>
 	);
 };
+
 export default Forma;

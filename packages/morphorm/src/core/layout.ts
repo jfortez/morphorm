@@ -2,19 +2,20 @@
 import type { z } from "zod";
 import type { ParsedField } from "@morphorm/core/types";
 
-import type { FieldType } from "./fields";
+import type { FieldType } from "../fields";
 import type {
 	AutoField,
 	Components,
+	ContextType,
 	FieldTransformFunction,
 	FieldTransformObject,
 	FieldsConfig,
 	FormaField,
 	Sizes,
 	SpacerType,
-} from "./types";
+} from "../types";
 
-export type InternalField<Z extends z.ZodObject<any> = z.ZodObject<any>> = {
+export interface InternalField<Z extends z.ZodObject<any> = z.ZodObject<any>> {
 	name: string;
 	label?: string | React.ReactNode;
 	element?: React.ReactNode;
@@ -29,7 +30,7 @@ export type InternalField<Z extends z.ZodObject<any> = z.ZodObject<any>> = {
 	description?: string | ((args: { fieldValues: z.infer<Z>; context: any }) => string);
 	disabled?: boolean | ((args: { fieldValues: z.infer<Z>; context: any }) => boolean);
 	overrides?: (originalElement: React.JSX.Element, meta: any) => React.ReactNode;
-};
+}
 
 export function generateGrid<Z extends z.ZodObject<any>>(
 	fields: InternalField<Z>[],
@@ -149,7 +150,7 @@ const parseNestedPath = (name: string): { parentKey: string | null; childKey: st
 function isFieldsArray<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
 	C extends Components = NonNullable<unknown>,
-	Context = any,
+	Context extends ContextType = ContextType,
 >(fields: FieldsConfig<Z, C, Context>): fields is FormaField<Z, C, Context>[] {
 	return Array.isArray(fields);
 }
@@ -157,7 +158,7 @@ function isFieldsArray<
 function isFieldsFunction<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
 	C extends Components = NonNullable<unknown>,
-	Context = any,
+	Context extends ContextType = ContextType,
 >(fields: FieldsConfig<Z, C, Context>): fields is FieldTransformFunction<Z, C, Context> {
 	return typeof fields === "function";
 }
@@ -165,7 +166,7 @@ function isFieldsFunction<
 function isFieldsObject<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
 	C extends Components = NonNullable<unknown>,
-	Context = any,
+	Context extends ContextType = ContextType,
 >(fields: FieldsConfig<Z, C, Context>): fields is FieldTransformObject<Z, C, Context> {
 	return typeof fields === "object" && !Array.isArray(fields);
 }
@@ -173,7 +174,7 @@ function isFieldsObject<
 export function parseFields<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
 	C extends Components = NonNullable<unknown>,
-	Context = any,
+	Context extends ContextType = ContextType,
 >(
 	fields: FieldsConfig<Z, C, Context> | undefined,
 	schemaFields: ParsedField[],
@@ -313,10 +314,9 @@ export function parseFields<
 	return defaultFields;
 }
 
-export function defineFields<Z extends z.ZodObject<any>, Context = undefined>(config: {
-	schema: Z;
-	fields: FieldsConfig<Z, {}, Context>;
-	context?: Context;
-}) {
+export function defineFields<
+	Z extends z.ZodObject<any>,
+	Context extends ContextType = ContextType,
+>(config: { schema: Z; fields: FieldsConfig<Z, {}, Context>; context?: Context }) {
 	return config.fields;
 }

@@ -38,10 +38,13 @@ export const FormWithArray = () => (
 				label: "Age",
 				type: "number",
 				watch: ["name"],
+				disabled: ({ fieldValues }) => !fieldValues.name,
 			},
 			{
 				name: "tasks.title",
 				label: "Task Title",
+				size: 6,
+
 				type: "text",
 			},
 			{
@@ -50,6 +53,7 @@ export const FormWithArray = () => (
 				type: "textarea",
 				watch: ["tasks.title"],
 				watchContext: ["userRole"],
+				size: 6,
 				disabled: ({ fieldValues }) => !fieldValues.tasks.title,
 				placeholder: ({ context }) =>
 					context?.userRole ? `Add notes for ${context.userRole}...` : "Add notes...",
@@ -66,79 +70,77 @@ export const FormWithArray = () => (
 );
 
 export const FormWithFunction = () => (
-	<div data-testid="form-function-container">
-		<Forma<typeof formSchema>
-			schema={formSchema}
-			fields={(autoFields) => {
-				return autoFields.map((field) => ({
-					...field,
-					size: 4,
-					...(field.name === "fullName" ? { watch: ["firstName", "lastName"] } : {}),
-				}));
-			}}
-		/>
-	</div>
+	<Forma<typeof formSchema>
+		schema={formSchema}
+		fields={(autoFields) => {
+			return autoFields.map((field) => ({
+				...field,
+				size: 4,
+				...(field.name === "fullName"
+					? {
+							watch: ["firstName", "lastName"],
+							placeholder: ({ fieldValues }) => `${fieldValues.firstName} ${fieldValues.lastName}`,
+						}
+					: {}),
+			}));
+		}}
+	/>
 );
 
 export const FormWithObject = () => (
-	<div data-testid="form-object-container">
-		<Forma<typeof formSchema>
-			schema={formSchema}
-			fields={{
-				firstName: { size: 6, type: "text" },
-				lastName: { size: 6, type: "text" },
-				fullName: {
-					size: 12,
-					type: "text",
-					watch: ["firstName", "lastName"],
-					disabled: ({ fieldValues }) => !fieldValues.firstName,
-				},
-			}}
-		/>
-	</div>
+	<Forma<typeof formSchema>
+		schema={formSchema}
+		fields={{
+			firstName: { size: 6, type: "text" },
+			lastName: { size: 6, type: "text" },
+			fullName: {
+				size: 12,
+				type: "text",
+				watch: ["firstName", "lastName"],
+				disabled: ({ fieldValues }) => !fieldValues.firstName,
+				placeholder: ({ fieldValues }) => `${fieldValues.firstName} ${fieldValues.lastName}`,
+			},
+		}}
+	/>
 );
 
 export const FormWithContext = () => (
-	<div data-testid="form-context-container">
-		<Forma
-			schema={formSchema}
-			context={{ userId: "123", isAdmin: true }}
-			fields={[
-				{
-					name: "isActive",
-					type: "checkbox",
-					size: 6,
-				},
-				{
-					name: "age",
-					type: "number",
-					size: 6,
-					watch: ["isActive"],
-					disabled: ({ context }) => !context.isAdmin,
-					watchContext: ["isAdmin"],
-				},
-			]}
-		/>
-	</div>
+	<Forma
+		schema={formSchema}
+		context={{ userId: "123", isAdmin: true }}
+		fields={[
+			{
+				name: "isActive",
+				type: "checkbox",
+				size: 6,
+			},
+			{
+				name: "age",
+				type: "number",
+				size: 6,
+				watch: ["isActive"],
+				disabled: ({ context }) => !context.isAdmin,
+				watchContext: ["isAdmin"],
+			},
+		]}
+	/>
 );
 
 export const FormWithObjectFunction = () => (
-	<div data-testid="form-object-function-container">
-		<Forma<typeof formSchema>
-			schema={formSchema}
-			fields={{
-				firstName: { size: 6, type: "text" },
-				lastName: (field) => ({
-					...field,
-					size: 6,
-				}),
-				fullName: {
-					size: 12,
-					type: "text",
-					watch: ["firstName", "lastName"],
-					disabled: ({ fieldValues }) => !fieldValues.firstName || !fieldValues.lastName,
-				},
-			}}
-		/>
-	</div>
+	<Forma<typeof formSchema>
+		schema={formSchema}
+		fields={{
+			firstName: { size: 6, type: "text" },
+			lastName: (field) => ({
+				...field,
+				size: 6,
+			}),
+			fullName: {
+				size: 12,
+				type: "text",
+				watch: ["firstName", "lastName"],
+				disabled: ({ fieldValues }) => !fieldValues.firstName || !fieldValues.lastName,
+			},
+		}}
+	/>
 );
