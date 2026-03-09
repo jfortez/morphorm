@@ -1305,7 +1305,7 @@ describe("FormKit", () => {
 			await user.click(addButton);
 		});
 
-		it("renders array field with watch and context", async () => {
+		it("renders array field with context", async () => {
 			const schema = z.object({
 				name: z.string(),
 				age: z.number(),
@@ -1347,7 +1347,7 @@ describe("FormKit", () => {
 							type: "textarea",
 							watch: ["tasks.title"],
 							watchContext: ["userRole"],
-							disabled: ({ fieldValues }) => !fieldValues.tasks,
+							disabled: ({ fieldValues }) => !fieldValues.tasks.title,
 							placeholder: ({ context }) =>
 								context?.userRole ? `Add notes for ${context.userRole}...` : "Add notes...",
 						},
@@ -1356,6 +1356,7 @@ describe("FormKit", () => {
 							label: ({ context }) =>
 								context?.userRole ? `Priority (${context.userRole})` : "Priority",
 							type: "text",
+							watchContext: ["userRole"],
 						},
 					]}
 					onSubmit={mockSubmit}
@@ -1373,6 +1374,7 @@ describe("FormKit", () => {
 			});
 
 			const notesInput = screen.getByTestId("textarea-tasks[0].notes") as HTMLTextAreaElement;
+
 			expect(notesInput).toBeInTheDocument();
 			expect(notesInput.disabled).toBe(true);
 			expect(notesInput.placeholder).toBe("Add notes for admin...");
@@ -1402,6 +1404,224 @@ describe("FormKit", () => {
 			await waitFor(() => {
 				expect(notesInput2.disabled).toBe(false);
 			});
+		});
+
+		it("handles personal profile with full name tracking, privilege context, and two array groups", async () => {
+			const schema = z.object({
+				firstName: z.string(),
+				lastName: z.string(),
+				fullName: z.string(),
+				status: z.string(),
+				email: z.email(),
+				phone: z.string(),
+				addresses: z.array(
+					z.object({
+						type: z.string(),
+						line1: z.string(),
+						city: z.string(),
+						notes: z.string().optional(),
+					}),
+				),
+				emergencyContacts: z.array(
+					z.object({
+						contactName: z.string(),
+						relationship: z.string(),
+						contactPhone: z.string(),
+					}),
+				),
+			});
+
+			const user = userEvent.setup();
+
+			render(
+				<Forma
+					schema={schema}
+					context={{ role: "manager", canEditSensitive: true }}
+					initialValues={{
+						firstName: "John",
+						lastName: "Doe",
+						fullName: "",
+						status: "active",
+						email: "john.doe@example.com",
+						phone: "555-1234",
+						addresses: [
+							{ city: "Madrid", line1: "Main St 123", notes: "Leave at gate", type: "home" },
+							{ city: "", line1: "Business Ave 45", notes: "", type: "office" },
+						],
+						emergencyContacts: [
+							{ contactName: "Jane Doe", contactPhone: "555-9999", relationship: "spouse" },
+							{ contactName: "Carlos Perez", contactPhone: "555-8888", relationship: "" },
+						],
+					}}
+					fields={[
+						{ name: "firstName", type: "text", label: "First Name" },
+						{ name: "lastName", type: "text", label: "Last Name" },
+						{
+							name: "fullName",
+							type: "text",
+							label: "Full Name",
+							watch: ["firstName", "lastName"],
+							watchContext: ["canEditSensitive"],
+							disabled: ({ context, fieldValues }) =>
+								!context.canEditSensitive || !fieldValues.firstName || !fieldValues.lastName,
+							placeholder: ({ fieldValues }) => {
+								const first = fieldValues.firstName || "First";
+								const last = fieldValues.lastName || "Last";
+								return `${first} ${last}`;
+							},
+						},
+						{ name: "email", type: "text", label: "Email" },
+						{
+							name: "status",
+							type: "text",
+							label: "Status",
+						},
+						{
+							name: "phone",
+							type: "text",
+							label: "Phone",
+							watch: ["status"],
+							disabled: ({ fieldValues }) => fieldValues.status !== "active",
+						},
+						{ name: "addresses.type", type: "text", label: "Address Type" },
+						{ name: "addresses.line1", type: "text", label: "Address Line" },
+						{ name: "addresses.city", type: "text", label: "City" },
+						{
+							name: "addresses.notes",
+							type: "textarea",
+							label: "Address Notes",
+							watch: ["addresses.city"],
+							watchContext: ["role"],
+							disabled: ({ fieldValues }) => !fieldValues.addresses.city,
+							placeholder: ({ context }) => `Notes for ${context.role}`,
+						},
+						{ name: "emergencyContacts.contactName", type: "text", label: "Contact Name" },
+						{ name: "emergencyContacts.relationship", type: "text", label: "Relationship" },
+						{
+							name: "emergencyContacts.contactPhone",
+							type: "text",
+							label: "Emergency Phone",
+							watch: ["emergencyContacts.contactName", "emergencyContacts.relationship"],
+							disabled: ({ fieldValues }) =>
+								!fieldValues.emergencyContacts.contactName ||
+								!fieldValues.emergencyContacts.relationship,
+						},
+					]}
+					onSubmit={mockSubmit}
+					showSubmit
+				/>,
+			);
+
+			const firstName = screen.getByTestId("input-firstName") as HTMLInputElement;
+			const lastName = screen.getByTestId("input-lastName") as HTMLInputElement;
+			const fullName = screen.getByTestId("input-fullName") as HTMLInputElement;
+			const status = screen.getByTestId("input-status") as HTMLInputElement;
+			const phone = screen.getByTestId("input-phone") as HTMLInputElement;
+
+			expect(firstName).toHaveValue("John");
+			expect(lastName).toHaveValue("Doe");
+			expect(fullName.disabled).toBe(false);
+			expect(fullName.placeholder).toBe("John Doe");
+			expect(phone.disabled).toBe(false);
+
+			await user.clear(firstName);
+			await waitFor(() => {
+				expect(fullName.disabled).toBe(true);
+			});
+			expect(fullName.placeholder).toBe("First Doe");
+
+			await user.type(firstName, "Jane");
+			await waitFor(() => {
+				expect(fullName.disabled).toBe(false);
+			});
+			expect(fullName.placeholder).toBe("Jane Doe");
+
+			await user.clear(status);
+			await user.type(status, "inactive");
+			await waitFor(() => {
+				expect(phone.disabled).toBe(true);
+			});
+
+			await user.clear(status);
+			await user.type(status, "active");
+			await waitFor(() => {
+				expect(phone.disabled).toBe(false);
+			});
+
+			const addressNotes0 = screen.getByTestId(
+				"textarea-addresses[0].notes",
+			) as HTMLTextAreaElement;
+			const addressNotes1 = screen.getByTestId(
+				"textarea-addresses[1].notes",
+			) as HTMLTextAreaElement;
+			const addressCity0 = screen.getByTestId("input-addresses[0].city") as HTMLInputElement;
+			const addressCity1 = screen.getByTestId("input-addresses[1].city") as HTMLInputElement;
+
+			expect(addressNotes0.disabled).toBe(false);
+			expect(addressNotes1.disabled).toBe(true);
+			expect(addressNotes0.placeholder).toBe("Notes for manager");
+
+			await user.type(addressCity1, "Barcelona");
+			await waitFor(() => {
+				expect(addressNotes1.disabled).toBe(false);
+			});
+
+			await user.clear(addressCity0);
+			await waitFor(() => {
+				expect(addressNotes0.disabled).toBe(true);
+			});
+			expect(addressNotes1.disabled).toBe(false);
+
+			const contactPhone0 = screen.getByTestId(
+				"input-emergencyContacts[0].contactPhone",
+			) as HTMLInputElement;
+			const contactPhone1 = screen.getByTestId(
+				"input-emergencyContacts[1].contactPhone",
+			) as HTMLInputElement;
+			const contactName0 = screen.getByTestId(
+				"input-emergencyContacts[0].contactName",
+			) as HTMLInputElement;
+			const relationship1 = screen.getByTestId(
+				"input-emergencyContacts[1].relationship",
+			) as HTMLInputElement;
+
+			expect(contactPhone0.disabled).toBe(false);
+			expect(contactPhone1.disabled).toBe(true);
+
+			await user.type(relationship1, "friend");
+			await waitFor(() => {
+				expect(contactPhone1.disabled).toBe(false);
+			});
+
+			await user.clear(contactName0);
+			await waitFor(() => {
+				expect(contactPhone0.disabled).toBe(true);
+			});
+			expect(contactPhone1.disabled).toBe(false);
+
+			const addAddressButton = screen.getByText(/add addresses/i);
+			await user.click(addAddressButton);
+
+			await waitFor(() => {
+				expect(screen.getByTestId("field-addresses[2].city")).toBeInTheDocument();
+			});
+
+			const addressNotes2 = screen.getByTestId(
+				"textarea-addresses[2].notes",
+			) as HTMLTextAreaElement;
+			expect(addressNotes2.disabled).toBe(true);
+
+			const addContactButton = screen.getByText(/add emergency contacts/i);
+			await user.click(addContactButton);
+
+			await waitFor(() => {
+				expect(screen.getByTestId("field-emergencyContacts[2].contactName")).toBeInTheDocument();
+			});
+
+			const contactPhone2 = screen.getByTestId(
+				"input-emergencyContacts[2].contactPhone",
+			) as HTMLInputElement;
+			expect(contactPhone2.disabled).toBe(true);
 		});
 	});
 });

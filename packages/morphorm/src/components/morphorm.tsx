@@ -21,7 +21,7 @@ import { SubmitButton } from "./subtmit";
 import { generateGrid, parseFields } from "../util";
 import { ZodProvider } from "@morphorm/core/zod";
 import { PlusIcon, TrashIcon } from "./ui/icons";
-import "./index.css";
+import "./styles.css";
 
 export interface FormState {
 	canSubmit: boolean;
@@ -86,6 +86,73 @@ const getLabelString = (label: unknown): string => {
 	return "";
 };
 
+const normalizePathSegments = (path: string): string[] => {
+	return path
+		.replace(/\[(\d+)\]/g, ".$1")
+		.split(".")
+		.filter(Boolean);
+};
+
+const getValueByPath = (source: Record<string, unknown> | undefined, path: string): unknown => {
+	if (!source) {
+		return undefined;
+	}
+
+	const segments = normalizePathSegments(path);
+	let current: unknown = source;
+
+	for (const segment of segments) {
+		if (current === null || typeof current !== "object") {
+			return undefined;
+		}
+		current = (current as Record<string, unknown>)[segment];
+	}
+
+	return current;
+};
+
+const setValueByPath = (
+	target: Record<string, unknown>,
+	path: string,
+	value: unknown,
+): Record<string, unknown> => {
+	const segments = normalizePathSegments(path);
+	if (segments.length === 0) {
+		return target;
+	}
+
+	let current: Record<string, unknown> = target;
+	for (let index = 0; index < segments.length - 1; index++) {
+		const segment = segments[index]!;
+		const next = current[segment];
+		if (!next || typeof next !== "object") {
+			current[segment] = {};
+		}
+		current = current[segment] as Record<string, unknown>;
+	}
+
+	current[segments[segments.length - 1]!] = value;
+	return target;
+};
+
+const resolveWatchPathForField = (watchPath: string, fieldPath: string): string => {
+	const fieldMatch = /^([^[.\]]+)\[(\d+)\]/.exec(fieldPath);
+	if (!fieldMatch || watchPath.includes("[")) {
+		return watchPath;
+	}
+
+	const arrayRoot = fieldMatch[1]!;
+	const arrayIndex = fieldMatch[2]!;
+	if (watchPath === arrayRoot) {
+		return `${arrayRoot}[${arrayIndex}]`;
+	}
+	if (watchPath.startsWith(`${arrayRoot}.`)) {
+		return `${arrayRoot}[${arrayIndex}]${watchPath.slice(arrayRoot.length)}`;
+	}
+
+	return watchPath;
+};
+
 interface ArrayFieldProps {
 	col: InternalField;
 	nestedFields?: InternalField[];
@@ -99,23 +166,34 @@ const ArrayField = memo(({ col, nestedFields = [], fieldsConfig = [] }: ArrayFie
 		.filter((f) => f.name.startsWith(`${col.name}.`))
 		.map((f) => ({ ...f, name: f.name.replace(`${col.name}.`, "") }));
 
+	const hasCustomArrayConfig = arrayFieldConfig.length > 0;
 	const fieldsAsObject = arrayFieldConfig.reduce(
 		(acc, f) => {
-			acc[f.name] = { label: f.label, type: f.type };
+			const {
+				name,
+				arrayPath: _arrayPath,
+				mode: _mode,
+				schema: _schema,
+				...fieldConfig
+			} = f as InternalField & Record<string, unknown>;
+			acc[name] = fieldConfig;
 			return acc;
 		},
 		{} as Record<string, any>,
 	);
 
 	const autoNestedFields = useMemo(
-		() => parseFields(Object.keys(fieldsAsObject).length > 0 ? fieldsAsObject : undefined, schema),
-		[schema, fieldsAsObject],
+		() => parseFields(hasCustomArrayConfig ? fieldsAsObject : undefined, schema),
+		[schema, hasCustomArrayConfig, fieldsAsObject],
 	);
 	const defaultValues = useMemo(() => getDefaultValues(autoNestedFields), [autoNestedFields]);
 
 	const allNestedFields = useMemo(() => {
+		if (hasCustomArrayConfig) {
+			return autoNestedFields;
+		}
 		return [...autoNestedFields, ...nestedFields];
-	}, [autoNestedFields, nestedFields]);
+	}, [autoNestedFields, nestedFields, hasCustomArrayConfig]);
 
 	if (allNestedFields.length === 0) {
 		return null;
@@ -235,11 +313,12 @@ const ContextAwareField = ({ col, mode }: ContextAwareFieldProps) => {
 		const watchSelector = (state: any) => {
 			const values: Record<string, unknown> = {};
 			for (const key of col.watch!) {
-				values[key] = state.values?.[key];
+				const resolvedPath = resolveWatchPathForField(key, col.name);
+				const watchedValue = getValueByPath(state.values, resolvedPath);
+				setValueByPath(values, key, watchedValue);
 			}
 			return values;
 		};
-
 		return (
 			<form.Subscribe selector={watchSelector}>
 				{(watchedValues) => (
