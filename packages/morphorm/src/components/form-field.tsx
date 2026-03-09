@@ -5,7 +5,7 @@ import { useMemo } from "react";
 import type { z } from "zod";
 
 import type { FieldType } from "../fields";
-import type { Components, CustomPropertyArgs, ValueOrFunction } from "../types";
+import type { Components, ContextType, CustomPropertyArgs, ValueOrFunction } from "../types";
 
 import Field from "../fields";
 import {
@@ -26,7 +26,7 @@ interface _SharedFieldProps {
 type FormFieldMap<
 	C extends Components = NonNullable<unknown>,
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
-	Context = any,
+	Context extends ContextType = ContextType,
 > = {
 	[K in FieldType<C>]: {
 		name: string;
@@ -48,13 +48,13 @@ type FormFieldMap<
 export type FormFieldType<
 	C extends Components = NonNullable<unknown>,
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
-	Context = any,
+	Context extends ContextType = ContextType,
 > = FormFieldMap<C, Z, Context>[FieldType<C>];
 
 interface FormInputProps<
 	C extends Components = NonNullable<unknown>,
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
-	Context = any,
+	Context extends ContextType = ContextType,
 > {
 	metadata: FormFieldType<C, Z, Context>;
 	context?: Context;
@@ -64,7 +64,7 @@ interface FormInputProps<
 const FormField = <
 	C extends Components = NonNullable<unknown>,
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
-	Context = any,
+	Context extends ContextType = ContextType,
 >({
 	metadata: _metadata,
 	context,
