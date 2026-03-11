@@ -17,7 +17,7 @@ import { FormComponentsProvider, useFormKit } from "./form-context";
 import { FormaContext } from "./provider";
 import Field from "./form-field";
 import { useAppForm } from "./form-hook";
-import { FormaSubmit, type FormaSubmitProps } from "./submit";
+import { FormSubmit, type FormaSubmitProps } from "./submit";
 import { parseFields } from "../core/layout";
 import { ZodProvider } from "@morphorm/core/zod";
 import { PlusIcon, TrashIcon } from "./ui/icons";
@@ -371,7 +371,7 @@ export const Form = <
 						rowChildren={rowChildren}
 					/>
 					{showSubmit && (
-						<FormaSubmit
+						<FormSubmit
 							onCancel={handleCancel}
 							{...(buttonSettings as any)}
 						/>
@@ -384,5 +384,3 @@ export const Form = <
 };
 
 export default Form;
-
-export { Provider as FormaProvider, useForm as useForma } from "./provider";

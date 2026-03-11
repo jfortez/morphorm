@@ -2,9 +2,10 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
-import { Form, FormaProvider, useForma } from "./morphorm";
+import { Form } from "./morphorm";
+import { useForm, Provider } from "./provider";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "./ui/collapsible";
-import { FormaSubmit } from "./submit";
+import { FormSubmit } from "./submit";
 import { generateGrid } from "../core/layout";
 import * as z from "zod";
 
@@ -14,7 +15,7 @@ const basicSchema = z.object({
 	name: z.string().min(1, "Name is required"),
 });
 
-describe("FormKit", () => {
+describe("Morphorm", () => {
 	const mockSubmit = vi.fn();
 
 	beforeEach(() => {
@@ -1832,13 +1833,13 @@ describe("FormKit", () => {
 			});
 
 			render(
-				<FormaProvider>
+				<Provider>
 					<Form
 						schema={schema}
 						onSubmit={mockSubmit}
 						showSubmit
 					/>
-				</FormaProvider>,
+				</Provider>,
 			);
 
 			expect(screen.getByTestId("field-name")).toBeInTheDocument();
@@ -1853,13 +1854,13 @@ describe("FormKit", () => {
 			const user = userEvent.setup();
 
 			render(
-				<FormaProvider>
+				<Provider>
 					<Form
 						schema={schema}
 						onSubmit={mockSubmit}
 					/>
-					<FormaSubmit />
-				</FormaProvider>,
+					<FormSubmit />
+				</Provider>,
 			);
 
 			expect(screen.getByTestId("field-name")).toBeInTheDocument();
@@ -1881,13 +1882,13 @@ describe("FormKit", () => {
 			});
 
 			render(
-				<FormaProvider>
+				<Provider>
 					<Form
 						schema={schema}
 						onSubmit={mockSubmit}
 					/>
-					<FormaSubmit submitText="Save Form" />
-				</FormaProvider>,
+					<FormSubmit submitText="Save Form" />
+				</Provider>,
 			);
 
 			expect(screen.getByRole("button", { name: /save form/i })).toBeInTheDocument();
@@ -1899,16 +1900,16 @@ describe("FormKit", () => {
 			});
 
 			render(
-				<FormaProvider>
+				<Provider>
 					<Form
 						schema={schema}
 						onSubmit={mockSubmit}
 					/>
-					<FormaSubmit
+					<FormSubmit
 						showCancelButton
 						cancelText="Reset"
 					/>
-				</FormaProvider>,
+				</Provider>,
 			);
 
 			expect(screen.getByRole("button", { name: /reset/i })).toBeInTheDocument();
@@ -1921,13 +1922,13 @@ describe("FormKit", () => {
 			});
 
 			render(
-				<FormaProvider>
+				<Provider>
 					<Form
 						schema={schema}
 						onSubmit={mockSubmit}
 					/>
-					<FormaSubmit showCancelButton={false} />
-				</FormaProvider>,
+					<FormSubmit showCancelButton={false} />
+				</Provider>,
 			);
 
 			expect(screen.queryByRole("button", { name: /cancel/i })).not.toBeInTheDocument();
@@ -1942,7 +1943,7 @@ describe("FormKit", () => {
 			});
 
 			render(
-				<FormaProvider>
+				<Provider>
 					<Form
 						schema={schema1}
 						scopeId="form1"
@@ -1953,7 +1954,7 @@ describe("FormKit", () => {
 						scopeId="form2"
 						onSubmit={mockSubmit}
 					/>
-				</FormaProvider>,
+				</Provider>,
 			);
 
 			expect(screen.getByTestId("field-firstName")).toBeInTheDocument();
@@ -1974,7 +1975,7 @@ describe("FormKit", () => {
 			const user = userEvent.setup();
 
 			render(
-				<FormaProvider>
+				<Provider>
 					<Form
 						schema={schema1}
 						scopeId="form1"
@@ -1985,15 +1986,15 @@ describe("FormKit", () => {
 						scopeId="form2"
 						onSubmit={mockSubmit2}
 					/>
-					<FormaSubmit
+					<FormSubmit
 						formKey="form1"
 						submitText="Submit Form 1"
 					/>
-					<FormaSubmit
+					<FormSubmit
 						formKey="form2"
 						submitText="Submit Form 2"
 					/>
-				</FormaProvider>,
+				</Provider>,
 			);
 
 			const firstNameInput = screen.getByTestId("input-firstName");
@@ -2016,15 +2017,15 @@ describe("FormKit", () => {
 			const user = userEvent.setup();
 
 			render(
-				<FormaProvider>
+				<Provider>
 					<Form
 						schema={schema}
 						onSubmit={async () => {
 							await new Promise((resolve) => setTimeout(resolve, 100));
 						}}
 					/>
-					<FormaSubmit />
-				</FormaProvider>,
+					<FormSubmit />
+				</Provider>,
 			);
 
 			const nameInput = screen.getByTestId("input-name");
@@ -2046,19 +2047,19 @@ describe("FormKit", () => {
 			let capturedForm: any;
 
 			const TestComponent = () => {
-				const form = useForma();
+				const form = useForm();
 				capturedForm = form;
 				return <div data-testid="test-component">Test</div>;
 			};
 
 			render(
-				<FormaProvider>
+				<Provider>
 					<Form
 						schema={schema}
 						onSubmit={mockSubmit}
 					/>
 					<TestComponent />
-				</FormaProvider>,
+				</Provider>,
 			);
 
 			expect(screen.getByTestId("test-component")).toBeInTheDocument();
@@ -2075,13 +2076,13 @@ describe("FormKit", () => {
 			let capturedForm2: any;
 
 			const TestComponent = () => {
-				capturedForm1 = useForma("form1");
-				capturedForm2 = useForma("form2");
+				capturedForm1 = useForm("form1");
+				capturedForm2 = useForm("form2");
 				return <div data-testid="test-component">Test</div>;
 			};
 
 			render(
-				<FormaProvider>
+				<Provider>
 					<Form
 						schema={schema1}
 						scopeId="form1"
@@ -2093,7 +2094,7 @@ describe("FormKit", () => {
 						onSubmit={mockSubmit}
 					/>
 					<TestComponent />
-				</FormaProvider>,
+				</Provider>,
 			);
 
 			expect(screen.getByTestId("test-component")).toBeInTheDocument();
@@ -2149,7 +2150,7 @@ describe("FormKit", () => {
 			let capturedForm: any;
 
 			render(
-				<FormaProvider>
+				<Provider>
 					<Form
 						schema={schema}
 						scopeId="myForm"
@@ -2158,7 +2159,7 @@ describe("FormKit", () => {
 							capturedForm = form;
 						}}
 					/>
-				</FormaProvider>,
+				</Provider>,
 			);
 
 			expect(capturedForm).toBeDefined();
@@ -2173,13 +2174,13 @@ describe("FormKit", () => {
 			const user = userEvent.setup();
 
 			render(
-				<FormaProvider>
+				<Provider>
 					<Form
 						schema={schema}
 						onSubmit={mockSubmit}
 					/>
-					<FormaSubmit submitText={(isSubmitting) => (isSubmitting ? "Saving..." : "Save")} />
-				</FormaProvider>,
+					<FormSubmit submitText={(isSubmitting) => (isSubmitting ? "Saving..." : "Save")} />
+				</Provider>,
 			);
 
 			expect(screen.getByRole("button", { name: /save/i })).toBeInTheDocument();
@@ -2211,7 +2212,7 @@ describe("FormKit", () => {
 			const user = userEvent.setup();
 
 			render(
-				<FormaProvider mode="combined">
+				<Provider mode="combined">
 					<Form
 						scopeId="personal"
 						schema={personalSchema}
@@ -2220,8 +2221,8 @@ describe("FormKit", () => {
 						scopeId="address"
 						schema={addressSchema}
 					/>
-					<FormaSubmit onSubmit={mockCombinedSubmit} />
-				</FormaProvider>,
+					<FormSubmit onSubmit={mockCombinedSubmit} />
+				</Provider>,
 			);
 
 			const firstNameInput = screen.getByTestId("input-firstName");
@@ -2259,14 +2260,14 @@ describe("FormKit", () => {
 			const user = userEvent.setup();
 
 			render(
-				<FormaProvider mode="combined">
+				<Provider mode="combined">
 					<Form
 						scopeId="contact"
 						schema={schema2}
 					/>
 					<Form schema={schema1} />
-					<FormaSubmit onSubmit={mockCombinedSubmit} />
-				</FormaProvider>,
+					<FormSubmit onSubmit={mockCombinedSubmit} />
+				</Provider>,
 			);
 
 			const emailInput = screen.getByTestId("input-email");
@@ -2301,7 +2302,7 @@ describe("FormKit", () => {
 			const user = userEvent.setup();
 
 			render(
-				<FormaProvider>
+				<Provider>
 					<Form
 						scopeId="form1"
 						schema={schema1}
@@ -2312,8 +2313,8 @@ describe("FormKit", () => {
 						schema={schema2}
 						onSubmit={mockSubmit2}
 					/>
-					<FormaSubmit formKey="form1" />
-				</FormaProvider>,
+					<FormSubmit formKey="form1" />
+				</Provider>,
 			);
 
 			const nameInput = screen.getByTestId("input-name");
@@ -2364,7 +2365,7 @@ describe("FormKit", () => {
 			const user = userEvent.setup();
 
 			render(
-				<FormaProvider mode="combined">
+				<Provider mode="combined">
 					<Form
 						scopeId="personal"
 						schema={personalSchema}
@@ -2415,8 +2416,8 @@ describe("FormKit", () => {
 							{ name: "contacts.relationship", type: "text", label: "Relationship" },
 						]}
 					/>
-					<FormaSubmit onSubmit={mockCombinedSubmit} />
-				</FormaProvider>,
+					<FormSubmit onSubmit={mockCombinedSubmit} />
+				</Provider>,
 			);
 
 			expect(screen.getByTestId("field-firstName")).toBeInTheDocument();
@@ -2499,7 +2500,7 @@ describe("FormKit", () => {
 			const user = userEvent.setup();
 
 			render(
-				<FormaProvider mode="combined">
+				<Provider mode="combined">
 					<Collapsible defaultOpen>
 						<CollapsibleTrigger>Personal Info</CollapsibleTrigger>
 						<CollapsibleContent>
@@ -2520,8 +2521,8 @@ describe("FormKit", () => {
 						</CollapsibleContent>
 					</Collapsible>
 
-					<FormaSubmit onSubmit={mockCombinedSubmit} />
-				</FormaProvider>,
+					<FormSubmit onSubmit={mockCombinedSubmit} />
+				</Provider>,
 			);
 
 			expect(screen.getByTestId("field-name")).toBeInTheDocument();
