@@ -2,22 +2,22 @@
 import type { z } from "zod";
 
 import * as React from "react";
-import { memo, useEffect, useMemo } from "react";
+import { memo, useRef, useMemo, useImperativeHandle, useContext, useLayoutEffect } from "react";
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
 
-import type { SubmitProps } from "./subtmit";
 import type { ContextType, RowOverrides } from "../types";
-import type { Components, FieldsConfig, FormSubmitHandler, FormaField } from "../types";
+import type { Components, FieldsConfig, FormSubmitHandler, FormField } from "../types";
 import type { FormNode, ResolvedFieldConfig } from "../core/render-model";
 
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
-import { Form, useFormContext } from "./ui/form";
+import { Form as PrimitiveForm, useFormContext } from "./ui/form";
 import { FormComponentsProvider, useFormKit } from "./form-context";
-import FormField from "./form-field";
+import { FormaContext } from "./provider";
+import Field from "./form-field";
 import { useAppForm } from "./form-hook";
-import { SubmitButton } from "./subtmit";
+import { FormaSubmit, type FormaSubmitProps } from "./submit";
 import { parseFields } from "../core/layout";
 import { ZodProvider } from "@morphorm/core/zod";
 import { PlusIcon, TrashIcon } from "./ui/icons";
@@ -41,14 +41,15 @@ interface FormProps<
 	fields?: FieldsConfig<Z, C, Context>;
 	onSubmit?: FormSubmitHandler<Z>;
 	onCancel?: () => void;
-	onStateChange?: (state: FormState) => void;
 	components?: C;
 	context?: Context;
 	showSubmit?: boolean;
 	children?: React.ReactNode;
-	buttonSettings?: Omit<SubmitProps, "handleCancel">;
+	buttonSettings?: Omit<FormaSubmitProps, "onCancel">;
 	rowOverrides?: RowOverrides<Z, C>;
 	rowChildren?: React.ReactNode;
+	scopeId?: string;
+	ref?: React.Ref<ReturnType<typeof useAppForm>>;
 }
 
 interface RenderGridProps {
@@ -103,7 +104,7 @@ const ArrayField = memo(({ arrayField, itemTemplate }: ArrayFieldProps) => {
 		<div className="formaArray">
 			<Collapsible defaultOpen>
 				<form.AppField
-					name={arrayField.name as never}
+					name={arrayField.name}
 					mode="array"
 				>
 					{(field) => {
@@ -218,7 +219,7 @@ const ContextAwareField = ({ field }: ContextAwareFieldProps) => {
 				{(watchedValues) => (
 					<form.AppField name={field.name as never}>
 						{() => (
-							<FormField
+							<Field
 								metadata={field as unknown as any}
 								context={slicedContext}
 								fieldValues={watchedValues}
@@ -233,7 +234,7 @@ const ContextAwareField = ({ field }: ContextAwareFieldProps) => {
 	return (
 		<form.AppField name={field.name as never}>
 			{() => (
-				<FormField
+				<Field
 					metadata={field as unknown as any}
 					context={slicedContext}
 					fieldValues={{}}
@@ -275,7 +276,7 @@ const RenderGrid = memo(({ nodes, rowOverrides, rowChildren }: RenderGridProps) 
 					if (rowOverrides) {
 						const fields = row
 							.filter((node) => node.kind !== "placeholder")
-							.map((node) => node.field) as unknown as FormaField<z.ZodObject<any>, Components>[];
+							.map((node) => node.field) as unknown as FormField<z.ZodObject<any>, Components>[];
 
 						return (
 							<div key={`row-${rowIndex + 1}`}>{rowOverrides(renderGrid, rowIndex, fields)}</div>
@@ -290,7 +291,7 @@ const RenderGrid = memo(({ nodes, rowOverrides, rowChildren }: RenderGridProps) 
 	);
 });
 
-export const Forma = <
+export const Form = <
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
 	C extends Components = NonNullable<unknown>,
 	Context extends ContextType = ContextType,
@@ -303,7 +304,6 @@ export const Forma = <
 		fields = undefined,
 		onSubmit,
 		onCancel,
-		onStateChange,
 		showSubmit = false,
 		components = {},
 		context,
@@ -311,7 +311,12 @@ export const Forma = <
 		buttonSettings,
 		rowOverrides,
 		rowChildren,
+		scopeId = "",
+		ref,
 	} = props;
+
+	const formaContext = useContext(FormaContext);
+	const hasFormaProvider = formaContext !== null;
 
 	const schemaProvider = useMemo(() => new ZodProvider(schema), [schema]);
 	const parsedFields = useMemo(() => {
@@ -338,29 +343,19 @@ export const Forma = <
 		},
 	});
 
-	useEffect(() => {
-		if (!onStateChange) {
-			return;
+	const unsub = useRef<() => void>(null!);
+
+	if (unsub.current === null && hasFormaProvider && formaContext) {
+		unsub.current = formaContext.registerForm(scopeId, form as any);
+	}
+
+	useLayoutEffect(() => {
+		if (hasFormaProvider && formaContext) {
+			return unsub.current;
 		}
+	}, [hasFormaProvider, formaContext, scopeId, form]);
 
-		const unsubscribe = form.store.subscribe(() => {
-			const currentState = form.store.state;
-			onStateChange({
-				canSubmit: currentState.canSubmit,
-				isSubmitted: currentState.isSubmitted,
-				isSubmitting: currentState.isSubmitting,
-			});
-		});
-
-		const initialState = form.store.state;
-		onStateChange({
-			canSubmit: initialState.canSubmit,
-			isSubmitted: initialState.isSubmitted,
-			isSubmitting: initialState.isSubmitting,
-		});
-
-		return unsubscribe;
-	}, [form.store, onStateChange]);
+	useImperativeHandle(ref, () => form as any);
 
 	const handleCancel = () => {
 		onCancel?.();
@@ -369,23 +364,25 @@ export const Forma = <
 	return (
 		<FormComponentsProvider value={{ components, context, schema: parsedFields }}>
 			<form.AppForm>
-				<Form className="formaRoot">
+				<PrimitiveForm className="formaRoot">
 					<RenderGrid
 						nodes={normalizedNodes}
 						rowOverrides={rowOverrides as never}
 						rowChildren={rowChildren}
 					/>
 					{showSubmit && (
-						<SubmitButton
-							handleCancel={handleCancel}
-							{...buttonSettings}
+						<FormaSubmit
+							onCancel={handleCancel}
+							{...(buttonSettings as any)}
 						/>
 					)}
 					{children}
-				</Form>
+				</PrimitiveForm>
 			</form.AppForm>
 		</FormComponentsProvider>
 	);
 };
 
-export default Forma;
+export default Form;
+
+export { Provider as FormaProvider, useForm as useForma } from "./provider";

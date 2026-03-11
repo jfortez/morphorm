@@ -10,7 +10,7 @@ import type {
 	FieldTransformFunction,
 	FieldTransformObject,
 	FieldsConfig,
-	FormaField,
+	FormField,
 	Sizes,
 	SpacerType,
 } from "../types";
@@ -151,7 +151,7 @@ function isFieldsArray<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
 	C extends Components = NonNullable<unknown>,
 	Context extends ContextType = ContextType,
->(fields: FieldsConfig<Z, C, Context>): fields is FormaField<Z, C, Context>[] {
+>(fields: FieldsConfig<Z, C, Context>): fields is FormField<Z, C, Context>[] {
 	return Array.isArray(fields);
 }
 

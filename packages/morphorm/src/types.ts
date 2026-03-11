@@ -122,7 +122,7 @@ export type FormaFieldBase<
 		) => React.ReactNode;
 	};
 
-export type FormaField<
+export type FormField<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
 	C extends Components = NonNullable<unknown>,
 	Context extends ContextType = ContextType,
@@ -212,7 +212,7 @@ export type FieldsConfig<
 	C extends Components = NonNullable<unknown>,
 	Context extends ContextType = ContextType,
 > =
-	| FormaField<Z, C, Context>[]
+	| FormField<Z, C, Context>[]
 	| FieldTransformFunction<Z, C, Context>
 	| FieldTransformObject<Z, C, Context>;
 
@@ -226,5 +226,5 @@ export type SelectOptions = Option[] | Promise<Option[]>;
 export type RowOverrides<Z extends z.ZodObject<any>, C extends Components> = (
 	gridElement: React.JSX.Element,
 	rowIndex: number,
-	fields: FormaField<Z, C>[],
+	fields: FormField<Z, C>[],
 ) => React.JSX.Element;

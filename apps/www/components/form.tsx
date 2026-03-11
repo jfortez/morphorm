@@ -1,5 +1,5 @@
 "use client";
-import { Forma } from "morphorm";
+import { Form } from "morphorm";
 import "morphorm/styles.css";
 import * as z from "zod";
 
@@ -24,7 +24,7 @@ const schema = z.object({
 });
 
 export const FormWithArray = () => (
-	<Forma
+	<Form
 		schema={schema}
 		context={{ userRole: "admin" }}
 		fields={[
@@ -70,7 +70,7 @@ export const FormWithArray = () => (
 );
 
 export const FormWithFunction = () => (
-	<Forma<typeof formSchema>
+	<Form<typeof formSchema>
 		schema={formSchema}
 		fields={(autoFields) => {
 			return autoFields.map((field) => ({
@@ -88,7 +88,7 @@ export const FormWithFunction = () => (
 );
 
 export const FormWithObject = () => (
-	<Forma<typeof formSchema>
+	<Form<typeof formSchema>
 		schema={formSchema}
 		fields={{
 			firstName: { size: 6, type: "text" },
@@ -105,7 +105,7 @@ export const FormWithObject = () => (
 );
 
 export const FormWithContext = () => (
-	<Forma
+	<Form
 		schema={formSchema}
 		context={{ userId: "123", isAdmin: true }}
 		fields={[
@@ -127,7 +127,7 @@ export const FormWithContext = () => (
 );
 
 export const FormWithObjectFunction = () => (
-	<Forma<typeof formSchema>
+	<Form<typeof formSchema>
 		schema={formSchema}
 		fields={{
 			firstName: { size: 6, type: "text" },

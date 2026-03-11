@@ -2,7 +2,9 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
-import { Forma } from "./morphorm";
+import { Form, FormaProvider, useForma } from "./morphorm";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "./ui/collapsible";
+import { FormaSubmit } from "./submit";
 import { generateGrid } from "../core/layout";
 import * as z from "zod";
 
@@ -75,7 +77,7 @@ describe("FormKit", () => {
 	describe("Basic Rendering", () => {
 		it("renders form with auto-generated fields from schema", () => {
 			render(
-				<Forma
+				<Form
 					schema={basicSchema}
 					onSubmit={mockSubmit}
 					showSubmit
@@ -92,7 +94,7 @@ describe("FormKit", () => {
 
 		it("renders with custom fields configuration (array mode)", () => {
 			render(
-				<Forma
+				<Form
 					schema={basicSchema}
 					fields={[
 						{
@@ -124,7 +126,7 @@ describe("FormKit", () => {
 	describe("Fields Configuration - Function Mode", () => {
 		it("transforms all auto-generated fields using function", () => {
 			render(
-				<Forma
+				<Form
 					schema={basicSchema}
 					fields={(autoFields) => {
 						return autoFields.map((field) => ({
@@ -149,7 +151,7 @@ describe("FormKit", () => {
 
 		it("filters fields using function transformer", () => {
 			render(
-				<Forma
+				<Form
 					schema={basicSchema}
 					fields={(autoFields) => {
 						return autoFields
@@ -168,7 +170,7 @@ describe("FormKit", () => {
 
 		it("reorders fields using function transformer", () => {
 			render(
-				<Forma
+				<Form
 					schema={basicSchema}
 					fields={(autoFields) => {
 						const reordered = [...autoFields].reverse();
@@ -187,7 +189,7 @@ describe("FormKit", () => {
 	describe("Fields Configuration - Object Mode", () => {
 		it("transforms specific fields using object with partial values", () => {
 			render(
-				<Forma
+				<Form
 					schema={basicSchema}
 					fields={{
 						name: { size: 6, label: "Custom Name Label" },
@@ -205,7 +207,7 @@ describe("FormKit", () => {
 
 		it("transforms specific fields using object with functions", () => {
 			render(
-				<Forma
+				<Form
 					schema={basicSchema}
 					fields={{
 						name: (field) => ({
@@ -234,7 +236,7 @@ describe("FormKit", () => {
 
 		it("mixes partial values and function transformations in object mode", () => {
 			render(
-				<Forma
+				<Form
 					schema={basicSchema}
 					fields={{
 						name: { size: 6, label: "Static Override" },
@@ -256,7 +258,7 @@ describe("FormKit", () => {
 
 		it("preserves unmodified fields when using object mode", () => {
 			render(
-				<Forma
+				<Form
 					schema={basicSchema}
 					fields={{
 						name: { size: 6, label: "Custom Name Label" },
@@ -273,7 +275,7 @@ describe("FormKit", () => {
 
 		it("function transformer can return undefined to skip modifications", () => {
 			render(
-				<Forma
+				<Form
 					schema={basicSchema}
 					fields={{
 						name: () => undefined,
@@ -292,7 +294,7 @@ describe("FormKit", () => {
 	describe("Fields Configuration - Array Mode with Transformations", () => {
 		it("supports spacer type (fill) in array mode", () => {
 			render(
-				<Forma
+				<Form
 					schema={basicSchema}
 					fields={[
 						{
@@ -328,7 +330,7 @@ describe("FormKit", () => {
 			});
 
 			render(
-				<Forma
+				<Form
 					schema={schema}
 					fields={[
 						{ name: "firstName", type: "text", size: 6 },
@@ -357,7 +359,7 @@ describe("FormKit", () => {
 			});
 
 			render(
-				<Forma
+				<Form
 					schema={schema}
 					fields={[
 						{ name: "country", type: "text", size: 6 },
@@ -385,7 +387,7 @@ describe("FormKit", () => {
 			});
 
 			render(
-				<Forma
+				<Form
 					schema={schema}
 					fields={[
 						{ name: "agreeToTerms", type: "checkbox", size: 12 },
@@ -414,7 +416,7 @@ describe("FormKit", () => {
 			});
 
 			render(
-				<Forma
+				<Form
 					schema={schema}
 					context={{ isAdmin: false }}
 					fields={[
@@ -441,7 +443,7 @@ describe("FormKit", () => {
 			});
 
 			render(
-				<Forma
+				<Form
 					schema={schema}
 					context={{ userRole: "guest" }}
 					fields={[
@@ -472,7 +474,7 @@ describe("FormKit", () => {
 			});
 
 			render(
-				<Forma
+				<Form
 					schema={schema}
 					context={{ searchType: "products" }}
 					fields={[
@@ -502,7 +504,7 @@ describe("FormKit", () => {
 			});
 
 			render(
-				<Forma
+				<Form
 					schema={schema}
 					context={{ isPremiumUser: true, maxDiscount: 50 }}
 					fields={[
@@ -542,7 +544,7 @@ describe("FormKit", () => {
 			});
 
 			render(
-				<Forma<typeof schema>
+				<Form<typeof schema>
 					schema={schema}
 					initialValues={{
 						firstName: "John",
@@ -595,7 +597,7 @@ describe("FormKit", () => {
 			});
 
 			render(
-				<Forma<typeof schema>
+				<Form<typeof schema>
 					schema={schema}
 					initialValues={{
 						firstName: "",
@@ -647,7 +649,7 @@ describe("FormKit", () => {
 			});
 
 			render(
-				<Forma<typeof schema>
+				<Form<typeof schema>
 					schema={schema}
 					initialValues={{
 						isCompany: false,
@@ -706,7 +708,7 @@ describe("FormKit", () => {
 			});
 
 			render(
-				<Forma<typeof schema>
+				<Form<typeof schema>
 					schema={schema}
 					initialValues={{
 						isCompany: true,
@@ -768,7 +770,7 @@ describe("FormKit", () => {
 			});
 
 			render(
-				<Forma<typeof schema>
+				<Form<typeof schema>
 					schema={schema}
 					initialValues={{
 						quantity: 5,
@@ -857,7 +859,7 @@ describe("FormKit", () => {
 			});
 
 			render(
-				<Forma<typeof schema>
+				<Form<typeof schema>
 					schema={schema}
 					initialValues={{
 						quantity: 25,
@@ -951,7 +953,7 @@ describe("FormKit", () => {
 			const user = userEvent.setup();
 
 			render(
-				<Forma<typeof schema>
+				<Form<typeof schema>
 					schema={schema}
 					fields={[
 						{
@@ -1014,7 +1016,7 @@ describe("FormKit", () => {
 			const user = userEvent.setup();
 
 			render(
-				<Forma<typeof schema>
+				<Form<typeof schema>
 					schema={schema}
 					fields={[
 						{
@@ -1083,7 +1085,7 @@ describe("FormKit", () => {
 			const user = userEvent.setup();
 
 			render(
-				<Forma<typeof schema>
+				<Form<typeof schema>
 					schema={schema}
 					fields={[
 						{
@@ -1155,7 +1157,7 @@ describe("FormKit", () => {
 		it("handles empty schema", () => {
 			const emptySchema = z.object({});
 			const { container } = render(
-				<Forma
+				<Form
 					schema={emptySchema}
 					onSubmit={mockSubmit}
 					showSubmit
@@ -1172,7 +1174,7 @@ describe("FormKit", () => {
 			});
 
 			render(
-				<Forma
+				<Form
 					schema={optionalSchema}
 					onSubmit={mockSubmit}
 					showSubmit
@@ -1191,7 +1193,7 @@ describe("FormKit", () => {
 			});
 
 			const { container } = render(
-				<Forma
+				<Form
 					schema={typeSchema}
 					onSubmit={mockSubmit}
 					showSubmit
@@ -1220,7 +1222,7 @@ describe("FormKit", () => {
 			});
 
 			render(
-				<Forma
+				<Form
 					schema={schema}
 					onSubmit={mockSubmit}
 					showSubmit
@@ -1242,7 +1244,7 @@ describe("FormKit", () => {
 			});
 
 			render(
-				<Forma
+				<Form
 					schema={schema}
 					initialValues={{
 						products: [{ name: "Widget", price: 29.99 }],
@@ -1273,7 +1275,7 @@ describe("FormKit", () => {
 			const user = userEvent.setup();
 
 			render(
-				<Forma
+				<Form
 					schema={schema}
 					fields={[
 						{
@@ -1316,7 +1318,7 @@ describe("FormKit", () => {
 			const user = userEvent.setup();
 
 			render(
-				<Forma
+				<Form
 					schema={schema}
 					initialValues={{
 						todos: [
@@ -1371,7 +1373,7 @@ describe("FormKit", () => {
 			const user = userEvent.setup();
 
 			render(
-				<Forma
+				<Form
 					schema={schema}
 					context={{ userRole: "admin" }}
 					fields={[
@@ -1469,7 +1471,7 @@ describe("FormKit", () => {
 			const user = userEvent.setup();
 
 			render(
-				<Forma
+				<Form
 					schema={schema}
 					initialValues={{
 						tasks: [
@@ -1533,7 +1535,7 @@ describe("FormKit", () => {
 			const notesDisabledSpy = vi.fn(({ fieldValues }: any) => !fieldValues.tasks.title);
 
 			render(
-				<Forma
+				<Form
 					schema={schema}
 					initialValues={{
 						name: "",
@@ -1581,7 +1583,7 @@ describe("FormKit", () => {
 			const user = userEvent.setup();
 
 			render(
-				<Forma<typeof schema>
+				<Form<typeof schema>
 					schema={schema}
 					fields={[
 						{ name: "name", type: "text", label: "Name" },
@@ -1632,7 +1634,7 @@ describe("FormKit", () => {
 			const user = userEvent.setup();
 
 			render(
-				<Forma
+				<Form
 					schema={schema}
 					context={{ role: "manager", canEditSensitive: true }}
 					initialValues={{
@@ -1820,6 +1822,732 @@ describe("FormKit", () => {
 				"input-emergencyContacts[2].contactPhone",
 			) as HTMLInputElement;
 			expect(contactPhone2.disabled).toBe(true);
+		});
+	});
+
+	describe("FormaProvider and Form Composition", () => {
+		it("renders form with FormaProvider without breaking", () => {
+			const schema = z.object({
+				name: z.string().min(1, "Name is required"),
+			});
+
+			render(
+				<FormaProvider>
+					<Form
+						schema={schema}
+						onSubmit={mockSubmit}
+						showSubmit
+					/>
+				</FormaProvider>,
+			);
+
+			expect(screen.getByTestId("field-name")).toBeInTheDocument();
+			expect(screen.getByTestId("input-name")).toBeInTheDocument();
+		});
+
+		it(" FormaSubmit renders and can submit form when inside FormaProvider", async () => {
+			const schema = z.object({
+				name: z.string().min(1, "Name is required"),
+			});
+
+			const user = userEvent.setup();
+
+			render(
+				<FormaProvider>
+					<Form
+						schema={schema}
+						onSubmit={mockSubmit}
+					/>
+					<FormaSubmit />
+				</FormaProvider>,
+			);
+
+			expect(screen.getByTestId("field-name")).toBeInTheDocument();
+
+			const nameInput = screen.getByTestId("input-name");
+			await user.type(nameInput, "John Doe");
+
+			const submitButton = screen.getByRole("button", { name: /submit/i });
+			await user.click(submitButton);
+
+			await waitFor(() => {
+				expect(mockSubmit).toHaveBeenCalledWith({ name: "John Doe" });
+			});
+		});
+
+		it("FormaSubmit shows custom submit text", () => {
+			const schema = z.object({
+				name: z.string().min(1, "Name is required"),
+			});
+
+			render(
+				<FormaProvider>
+					<Form
+						schema={schema}
+						onSubmit={mockSubmit}
+					/>
+					<FormaSubmit submitText="Save Form" />
+				</FormaProvider>,
+			);
+
+			expect(screen.getByRole("button", { name: /save form/i })).toBeInTheDocument();
+		});
+
+		it("FormaSubmit shows cancel button when showCancelButton is true", () => {
+			const schema = z.object({
+				name: z.string().min(1, "Name is required"),
+			});
+
+			render(
+				<FormaProvider>
+					<Form
+						schema={schema}
+						onSubmit={mockSubmit}
+					/>
+					<FormaSubmit
+						showCancelButton
+						cancelText="Reset"
+					/>
+				</FormaProvider>,
+			);
+
+			expect(screen.getByRole("button", { name: /reset/i })).toBeInTheDocument();
+			expect(screen.getByRole("button", { name: /submit/i })).toBeInTheDocument();
+		});
+
+		it("FormaSubmit hides cancel button when showCancelButton is false", () => {
+			const schema = z.object({
+				name: z.string().min(1, "Name is required"),
+			});
+
+			render(
+				<FormaProvider>
+					<Form
+						schema={schema}
+						onSubmit={mockSubmit}
+					/>
+					<FormaSubmit showCancelButton={false} />
+				</FormaProvider>,
+			);
+
+			expect(screen.queryByRole("button", { name: /cancel/i })).not.toBeInTheDocument();
+		});
+
+		it("supports multiple isolated forms with formKey", () => {
+			const schema1 = z.object({
+				firstName: z.string(),
+			});
+			const schema2 = z.object({
+				lastName: z.string(),
+			});
+
+			render(
+				<FormaProvider>
+					<Form
+						schema={schema1}
+						scopeId="form1"
+						onSubmit={mockSubmit}
+					/>
+					<Form
+						schema={schema2}
+						scopeId="form2"
+						onSubmit={mockSubmit}
+					/>
+				</FormaProvider>,
+			);
+
+			expect(screen.getByTestId("field-firstName")).toBeInTheDocument();
+			expect(screen.getByTestId("field-lastName")).toBeInTheDocument();
+		});
+
+		it("FormaSubmit with specific formKey submits correct form", async () => {
+			const schema1 = z.object({
+				firstName: z.string(),
+			});
+			const schema2 = z.object({
+				lastName: z.string(),
+			});
+
+			const mockSubmit1 = vi.fn();
+			const mockSubmit2 = vi.fn();
+
+			const user = userEvent.setup();
+
+			render(
+				<FormaProvider>
+					<Form
+						schema={schema1}
+						scopeId="form1"
+						onSubmit={mockSubmit1}
+					/>
+					<Form
+						schema={schema2}
+						scopeId="form2"
+						onSubmit={mockSubmit2}
+					/>
+					<FormaSubmit
+						formKey="form1"
+						submitText="Submit Form 1"
+					/>
+					<FormaSubmit
+						formKey="form2"
+						submitText="Submit Form 2"
+					/>
+				</FormaProvider>,
+			);
+
+			const firstNameInput = screen.getByTestId("input-firstName");
+			await user.type(firstNameInput, "John");
+
+			const submitButton1 = screen.getByRole("button", { name: /submit form 1/i });
+			await user.click(submitButton1);
+
+			await waitFor(() => {
+				expect(mockSubmit1).toHaveBeenCalledWith({ firstName: "John" });
+			});
+			expect(mockSubmit2).not.toHaveBeenCalled();
+		});
+
+		it("FormaSubmit disables during submission", async () => {
+			const schema = z.object({
+				name: z.string().min(1, "Name is required"),
+			});
+
+			const user = userEvent.setup();
+
+			render(
+				<FormaProvider>
+					<Form
+						schema={schema}
+						onSubmit={async () => {
+							await new Promise((resolve) => setTimeout(resolve, 100));
+						}}
+					/>
+					<FormaSubmit />
+				</FormaProvider>,
+			);
+
+			const nameInput = screen.getByTestId("input-name");
+			await user.type(nameInput, "John");
+
+			const submitButton = screen.getByRole("button", { name: /submit/i });
+			await user.click(submitButton);
+
+			await waitFor(() => {
+				expect(submitButton).toBeDisabled();
+			});
+		});
+
+		it("useForma hook returns form instance within FormaProvider", () => {
+			const schema = z.object({
+				name: z.string(),
+			});
+
+			let capturedForm: any;
+
+			const TestComponent = () => {
+				const form = useForma();
+				capturedForm = form;
+				return <div data-testid="test-component">Test</div>;
+			};
+
+			render(
+				<FormaProvider>
+					<Form
+						schema={schema}
+						onSubmit={mockSubmit}
+					/>
+					<TestComponent />
+				</FormaProvider>,
+			);
+
+			expect(screen.getByTestId("test-component")).toBeInTheDocument();
+			expect(capturedForm).toBeDefined();
+			expect(typeof capturedForm.handleSubmit).toBe("function");
+			expect(typeof capturedForm.reset).toBe("function");
+		});
+
+		it("useForma with formKey returns specific form instance", () => {
+			const schema1 = z.object({ name: z.string() });
+			const schema2 = z.object({ email: z.string().email() });
+
+			let capturedForm1: any;
+			let capturedForm2: any;
+
+			const TestComponent = () => {
+				capturedForm1 = useForma("form1");
+				capturedForm2 = useForma("form2");
+				return <div data-testid="test-component">Test</div>;
+			};
+
+			render(
+				<FormaProvider>
+					<Form
+						schema={schema1}
+						scopeId="form1"
+						onSubmit={mockSubmit}
+					/>
+					<Form
+						schema={schema2}
+						scopeId="form2"
+						onSubmit={mockSubmit}
+					/>
+					<TestComponent />
+				</FormaProvider>,
+			);
+
+			expect(screen.getByTestId("test-component")).toBeInTheDocument();
+			expect(capturedForm1).toBeDefined();
+			expect(capturedForm2).toBeDefined();
+			expect(capturedForm1).not.toBe(capturedForm2);
+		});
+
+		it("Forma works without provider (backward compatibility)", () => {
+			const schema = z.object({
+				name: z.string().min(1, "Name is required"),
+			});
+
+			render(
+				<Form
+					schema={schema}
+					onSubmit={mockSubmit}
+					showSubmit
+				/>,
+			);
+
+			expect(screen.getByTestId("field-name")).toBeInTheDocument();
+			expect(screen.getByTestId("input-name")).toBeInTheDocument();
+		});
+
+		it("formRef callback receives form instance", () => {
+			const schema = z.object({
+				name: z.string(),
+			});
+
+			let capturedForm: any;
+
+			render(
+				<Form
+					schema={schema}
+					onSubmit={mockSubmit}
+					ref={(form) => {
+						capturedForm = form;
+					}}
+				/>,
+			);
+
+			expect(capturedForm).toBeDefined();
+			expect(typeof capturedForm.handleSubmit).toBe("function");
+			expect(typeof capturedForm.reset).toBe("function");
+		});
+
+		it("formRef works with FormaProvider", () => {
+			const schema = z.object({
+				name: z.string(),
+			});
+
+			let capturedForm: any;
+
+			render(
+				<FormaProvider>
+					<Form
+						schema={schema}
+						scopeId="myForm"
+						onSubmit={mockSubmit}
+						ref={(form) => {
+							capturedForm = form;
+						}}
+					/>
+				</FormaProvider>,
+			);
+
+			expect(capturedForm).toBeDefined();
+			expect(typeof capturedForm.handleSubmit).toBe("function");
+		});
+
+		it(" FormaSubmit can use dynamic submit text function", async () => {
+			const schema = z.object({
+				name: z.string().min(1, "Name is required"),
+			});
+
+			const user = userEvent.setup();
+
+			render(
+				<FormaProvider>
+					<Form
+						schema={schema}
+						onSubmit={mockSubmit}
+					/>
+					<FormaSubmit submitText={(isSubmitting) => (isSubmitting ? "Saving..." : "Save")} />
+				</FormaProvider>,
+			);
+
+			expect(screen.getByRole("button", { name: /save/i })).toBeInTheDocument();
+
+			const nameInput = screen.getByTestId("input-name");
+			await user.type(nameInput, "John");
+
+			const submitButton = screen.getByRole("button", { name: /save/i });
+			await user.click(submitButton);
+
+			await waitFor(() => {
+				expect(mockSubmit).toHaveBeenCalled();
+			});
+		});
+
+		it("FormaSubmit with mode='combined' submits all form values together", async () => {
+			const personalSchema = z.object({
+				firstName: z.string().min(1, "First name required"),
+				lastName: z.string().min(1, "Last name required"),
+			});
+
+			const addressSchema = z.object({
+				street: z.string().min(1, "Street required"),
+				city: z.string().min(1, "City required"),
+			});
+
+			const mockCombinedSubmit = vi.fn();
+
+			const user = userEvent.setup();
+
+			render(
+				<FormaProvider mode="combined">
+					<Form
+						scopeId="personal"
+						schema={personalSchema}
+					/>
+					<Form
+						scopeId="address"
+						schema={addressSchema}
+					/>
+					<FormaSubmit onSubmit={mockCombinedSubmit} />
+				</FormaProvider>,
+			);
+
+			const firstNameInput = screen.getByTestId("input-firstName");
+			const lastNameInput = screen.getByTestId("input-lastName");
+			const streetInput = screen.getByTestId("input-street");
+			const cityInput = screen.getByTestId("input-city");
+
+			await user.type(firstNameInput, "John");
+			await user.type(lastNameInput, "Doe");
+			await user.type(streetInput, "Main St");
+			await user.type(cityInput, "NYC");
+
+			const submitButton = screen.getByRole("button", { name: /submit/i });
+			await user.click(submitButton);
+
+			await waitFor(() => {
+				expect(mockCombinedSubmit).toHaveBeenCalledWith({
+					personal: { firstName: "John", lastName: "Doe" },
+					address: { street: "Main St", city: "NYC" },
+				});
+			});
+		});
+
+		it("FormaSubmit with mode='combined' works with default form (no key)", async () => {
+			const schema1 = z.object({
+				email: z.string().email("Valid email required"),
+			});
+
+			const schema2 = z.object({
+				phone: z.string().min(1, "Phone required"),
+			});
+
+			const mockCombinedSubmit = vi.fn();
+
+			const user = userEvent.setup();
+
+			render(
+				<FormaProvider mode="combined">
+					<Form
+						scopeId="contact"
+						schema={schema2}
+					/>
+					<Form schema={schema1} />
+					<FormaSubmit onSubmit={mockCombinedSubmit} />
+				</FormaProvider>,
+			);
+
+			const emailInput = screen.getByTestId("input-email");
+			const phoneInput = screen.getByTestId("input-phone");
+
+			await user.type(emailInput, "john@example.com");
+			await user.type(phoneInput, "123456");
+
+			const submitButton = screen.getByRole("button", { name: /submit/i });
+			await user.click(submitButton);
+
+			await waitFor(() => {
+				expect(mockCombinedSubmit).toHaveBeenCalledWith({
+					email: "john@example.com",
+					contact: { phone: "123456" },
+				});
+			});
+		});
+
+		it("FormaSubmit mode='single' only submits one form", async () => {
+			const schema1 = z.object({
+				name: z.string().min(1, "Name required"),
+			});
+
+			const schema2 = z.object({
+				email: z.string().email("Valid email required"),
+			});
+
+			const mockSubmit1 = vi.fn();
+			const mockSubmit2 = vi.fn();
+
+			const user = userEvent.setup();
+
+			render(
+				<FormaProvider>
+					<Form
+						scopeId="form1"
+						schema={schema1}
+						onSubmit={mockSubmit1}
+					/>
+					<Form
+						scopeId="form2"
+						schema={schema2}
+						onSubmit={mockSubmit2}
+					/>
+					<FormaSubmit formKey="form1" />
+				</FormaProvider>,
+			);
+
+			const nameInput = screen.getByTestId("input-name");
+			const emailInput = screen.getByTestId("input-email");
+
+			await user.type(nameInput, "John");
+			await user.type(emailInput, "john@example.com");
+
+			const submitButton = screen.getByRole("button", { name: /submit/i });
+			await user.click(submitButton);
+
+			await waitFor(() => {
+				expect(mockSubmit1).toHaveBeenCalledWith({ name: "John" });
+			});
+			expect(mockSubmit2).not.toHaveBeenCalled();
+		});
+
+		it("complex multi-form wizard with arrays, context, and cross-form subscriptions", async () => {
+			const personalSchema = z.object({
+				firstName: z.string().min(1, "First name required"),
+				lastName: z.string().min(1, "Last name required"),
+				employeeType: z.enum(["fulltime", "contractor", "intern"]),
+			});
+
+			const employmentSchema = z.object({
+				jobHistory: z.array(
+					z.object({
+						company: z.string().min(1, "Company required"),
+						role: z.string().min(1, "Role required"),
+						isCurrentRole: z.boolean(),
+						endDate: z.string().optional(),
+					}),
+				),
+			});
+
+			const emergencySchema = z.object({
+				contacts: z.array(
+					z.object({
+						name: z.string().min(1, "Contact name required"),
+						phone: z.string().min(1, "Phone required"),
+						relationship: z.string(),
+					}),
+				),
+			});
+
+			const mockCombinedSubmit = vi.fn();
+
+			const user = userEvent.setup();
+
+			render(
+				<FormaProvider mode="combined">
+					<Form
+						scopeId="personal"
+						schema={personalSchema}
+						context={{ companyName: "Acme Corp" }}
+						fields={[
+							{ name: "firstName", type: "text", size: 6 },
+							{ name: "lastName", type: "text", size: 6 },
+							{
+								name: "employeeType",
+								type: "text",
+								size: 12,
+							},
+						]}
+					/>
+					<Form
+						scopeId="employment"
+						schema={employmentSchema}
+						context={{ companyName: "Acme Corp" }}
+						fields={[
+							{
+								name: "jobHistory.company",
+								type: "text",
+								label: "Company Name",
+							},
+							{
+								name: "jobHistory.role",
+								type: "text",
+								label: "Job Title",
+							},
+							{
+								name: "jobHistory.isCurrentRole",
+								type: "checkbox",
+								label: "I currently work here",
+							},
+							{
+								name: "jobHistory.endDate",
+								type: "text",
+								label: "End Date",
+							},
+						]}
+					/>
+					<Form
+						scopeId="emergency"
+						schema={emergencySchema}
+						fields={[
+							{ name: "contacts.name", type: "text", label: "Contact Name" },
+							{ name: "contacts.phone", type: "text", label: "Phone Number" },
+							{ name: "contacts.relationship", type: "text", label: "Relationship" },
+						]}
+					/>
+					<FormaSubmit onSubmit={mockCombinedSubmit} />
+				</FormaProvider>,
+			);
+
+			expect(screen.getByTestId("field-firstName")).toBeInTheDocument();
+			expect(screen.getByTestId("field-lastName")).toBeInTheDocument();
+			expect(screen.getByTestId("field-employeeType")).toBeInTheDocument();
+			expect(screen.getAllByText(/no items/i)).toHaveLength(2);
+			expect(screen.getByText(/add job history/i)).toBeInTheDocument();
+
+			const firstNameInput = screen.getByTestId("input-firstName");
+			const lastNameInput = screen.getByTestId("input-lastName");
+			const employeeTypeInput = screen.getByTestId("input-employeeType");
+
+			await user.type(firstNameInput, "Jane");
+			await user.type(lastNameInput, "Smith");
+			await user.type(employeeTypeInput, "fulltime");
+
+			const addJobButton = screen.getByText(/add job history/i);
+			await user.click(addJobButton);
+
+			await waitFor(() => {
+				expect(screen.getByTestId("field-jobHistory[0].company")).toBeInTheDocument();
+			});
+
+			const companyInput = screen.getByTestId("input-jobHistory[0].company");
+			const roleInput = screen.getByTestId("input-jobHistory[0].role");
+
+			await user.type(companyInput, "Tech Corp");
+			await user.type(roleInput, "Software Engineer");
+
+			await user.click(addJobButton);
+
+			await waitFor(() => {
+				expect(screen.getByTestId("field-jobHistory[1].company")).toBeInTheDocument();
+			});
+
+			await user.click(addJobButton);
+
+			await waitFor(() => {
+				expect(screen.getByTestId("field-jobHistory[1].company")).toBeInTheDocument();
+			});
+
+			const submitButton = screen.getByRole("button", { name: /submit/i });
+			await user.click(submitButton);
+
+			await waitFor(() => {
+				expect(mockCombinedSubmit).toHaveBeenCalledWith({
+					personal: {
+						firstName: "Jane",
+						lastName: "Smith",
+						employeeType: "fulltime",
+					},
+					employment: {
+						jobHistory: [
+							{
+								company: "Tech Corp",
+								role: "Software Engineer",
+								isCurrentRole: false,
+								endDate: "",
+							},
+							{ company: "", role: "", isCurrentRole: false, endDate: "" },
+							{ company: "", role: "", isCurrentRole: false, endDate: "" },
+						],
+					},
+					emergency: {},
+				});
+			});
+		});
+
+		it("forms inside Collapsible work with combined submission", async () => {
+			const personalSchema = z.object({
+				name: z.string().min(1, "Name required"),
+			});
+
+			const billingSchema = z.object({
+				address: z.string().min(1, "Address required"),
+			});
+
+			const mockCombinedSubmit = vi.fn();
+
+			const user = userEvent.setup();
+
+			render(
+				<FormaProvider mode="combined">
+					<Collapsible defaultOpen>
+						<CollapsibleTrigger>Personal Info</CollapsibleTrigger>
+						<CollapsibleContent>
+							<Form
+								scopeId="personal"
+								schema={personalSchema}
+							/>
+						</CollapsibleContent>
+					</Collapsible>
+
+					<Collapsible>
+						<CollapsibleTrigger>Billing Address</CollapsibleTrigger>
+						<CollapsibleContent>
+							<Form
+								scopeId="billing"
+								schema={billingSchema}
+							/>
+						</CollapsibleContent>
+					</Collapsible>
+
+					<FormaSubmit onSubmit={mockCombinedSubmit} />
+				</FormaProvider>,
+			);
+
+			expect(screen.getByTestId("field-name")).toBeInTheDocument();
+
+			const nameInput = screen.getByTestId("input-name");
+			await user.type(nameInput, "John Doe");
+
+			const billingTrigger = screen.getByRole("button", { name: /billing address/i });
+			await user.click(billingTrigger);
+
+			await waitFor(() => {
+				expect(screen.getByTestId("field-address")).toBeInTheDocument();
+			});
+
+			const addressInput = screen.getByTestId("input-address");
+			await user.type(addressInput, "123 Main St");
+
+			const submitButton = screen.getByRole("button", { name: /submit/i });
+			await user.click(submitButton);
+
+			await waitFor(() => {
+				expect(mockCombinedSubmit).toHaveBeenCalledWith({
+					personal: { name: "John Doe" },
+					billing: { address: "123 Main St" },
+				});
+			});
 		});
 	});
 });
