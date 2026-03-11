@@ -1,4 +1,4 @@
-import type { FieldProps } from "./type";
+import type { FieldComponentProps } from "../types";
 
 import { useFieldContext } from "../components/ui/form";
 
@@ -6,7 +6,7 @@ export interface RadioProps {
 	options: { value: string; label: string }[];
 }
 
-export const RadioField = ({ options, ...props }: FieldProps<RadioProps>) => {
+export const RadioField = ({ options, ...props }: FieldComponentProps<RadioProps>) => {
 	const field = useFieldContext<string>();
 	return (
 		<div

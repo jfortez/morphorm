@@ -13,7 +13,7 @@ import type { FormNode, ResolvedFieldConfig } from "../core/render-model";
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
 import { Form as PrimitiveForm, useFormContext } from "./ui/form";
-import { FormComponentsProvider, useFormKit } from "./form-context";
+import { InternalProvider, useFormInternal } from "./internal-context";
 import { FormaContext } from "./provider";
 import Field from "./form-field";
 import { useAppForm } from "./form-hook";
@@ -196,7 +196,7 @@ const ArrayFieldItem = memo(({ fields, onRemove }: ArrayFieldItemProps) => {
 
 const ContextAwareField = ({ field }: ContextAwareFieldProps) => {
 	const form = useFormContext() as unknown as ReturnType<typeof useAppForm>;
-	const { context } = useFormKit();
+	const { context } = useFormInternal();
 
 	const hasWatch = field.watch && field.watch.length > 0;
 	const hasWatchContext = field.watchContext && field.watchContext.length > 0;
@@ -362,7 +362,7 @@ export const Form = <
 	};
 
 	return (
-		<FormComponentsProvider value={{ components, context, schema: parsedFields }}>
+		<InternalProvider value={{ components, context, schema: parsedFields }}>
 			<form.AppForm>
 				<PrimitiveForm className="formaRoot">
 					<RenderGrid
@@ -379,7 +379,7 @@ export const Form = <
 					{children}
 				</PrimitiveForm>
 			</form.AppForm>
-		</FormComponentsProvider>
+		</InternalProvider>
 	);
 };
 

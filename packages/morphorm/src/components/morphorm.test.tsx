@@ -8,6 +8,8 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "./ui/collap
 import { FormSubmit } from "./submit";
 import { generateGrid } from "../core/layout";
 import * as z from "zod";
+import type { FieldComponentProps } from "../types";
+import { useFieldContext } from "./ui/form";
 
 const basicSchema = z.object({
 	age: z.number().min(0).optional(),
@@ -322,6 +324,543 @@ describe("Morphorm", () => {
 		});
 	});
 
+	describe("Custom Components", () => {
+		it("renders array field with custom input component", () => {
+			const schema = z.object({
+				products: z.array(
+					z.object({
+						name: z.string(),
+						price: z.number(),
+					}),
+				),
+			});
+
+			const CustomInput = (props: FieldComponentProps) => {
+				const field = useFieldContext<string>();
+				return (
+					<input
+						{...props}
+						className="custom-text-input"
+						value={field.state.value}
+						onChange={(e) => field.handleChange(e.target.value)}
+						onBlur={field.handleBlur}
+					/>
+				);
+			};
+
+			render(
+				<Form
+					schema={schema}
+					components={{
+						text: CustomInput,
+					}}
+					initialValues={{
+						products: [{ name: "Widget", price: 29.99 }],
+					}}
+					onSubmit={mockSubmit}
+					showSubmit
+				/>,
+			);
+
+			const input = screen.getByTestId<HTMLInputElement>("control-products[0].name");
+
+			expect(input).toBeInTheDocument();
+			expect(input.value).toBe("Widget");
+		});
+
+		it("interactively adds array items with custom components", async () => {
+			const schema = z.object({
+				tasks: z.array(
+					z.object({
+						title: z.string(),
+						completed: z.boolean(),
+					}),
+				),
+			});
+
+			const CustomTextInput = (props: FieldComponentProps) => (
+				<input
+					type="text"
+					{...props}
+					data-testid="custom-text-input"
+				/>
+			);
+
+			const CustomCheckbox = (props: FieldComponentProps) => (
+				<input
+					type="checkbox"
+					{...props}
+					data-testid="custom-checkbox"
+				/>
+			);
+
+			const user = userEvent.setup();
+
+			render(
+				<Form
+					schema={schema}
+					components={{
+						customText: CustomTextInput,
+						customCbx: CustomCheckbox,
+					}}
+					fields={[
+						{
+							name: "tasks.title",
+							label: "Task Title",
+							type: "customText",
+						},
+						{
+							name: "tasks.completed",
+							label: "Done",
+							type: "customCbx",
+						},
+					]}
+					onSubmit={mockSubmit}
+					showSubmit
+				/>,
+			);
+
+			expect(screen.getByText(/no items/i)).toBeInTheDocument();
+
+			const addButton = screen.getByText(/add tasks/i);
+			await user.click(addButton);
+
+			await waitFor(() => {
+				expect(screen.getByTestId("custom-text-input")).toBeInTheDocument();
+			});
+
+			const titleInput = screen.getByTestId("custom-text-input");
+			await user.type(titleInput, "Buy groceries");
+
+			await waitFor(() => {
+				expect(titleInput).toHaveValue("Buy groceries");
+			});
+
+			const checkboxInput = screen.getByTestId("custom-checkbox");
+			await user.click(checkboxInput);
+
+			await waitFor(() => {
+				expect(checkboxInput).toBeChecked();
+			});
+
+			await user.click(addButton);
+
+			await waitFor(() => {
+				const inputs = screen.getAllByTestId("custom-text-input");
+				expect(inputs).toHaveLength(2);
+			});
+		});
+
+		it("renders complex nested object array with custom components", () => {
+			const schema = z.object({
+				employees: z.array(
+					z.object({
+						name: z.string(),
+						role: z.string(),
+						salary: z.number(),
+					}),
+				),
+			});
+
+			const CustomInput = (props: FieldComponentProps) => {
+				const field = useFieldContext<string>();
+				return (
+					<input
+						type="text"
+						{...props}
+						data-testid="custom-input"
+						value={field.state.value}
+						onChange={(e) => field.handleChange(e.target.value)}
+					/>
+				);
+			};
+
+			const CustomNumber = (props: FieldComponentProps) => {
+				const field = useFieldContext<number>();
+				return (
+					<input
+						type="number"
+						{...props}
+						data-testid="custom-number"
+						value={field.state.value}
+						onChange={(e) => field.handleChange(Number(e.target.value))}
+					/>
+				);
+			};
+
+			render(
+				<Form
+					schema={schema}
+					components={{
+						text: CustomInput,
+						number: CustomNumber,
+					}}
+					fields={[
+						{ name: "employees.name", label: "Name", type: "text" },
+						{ name: "employees.role", label: "Role", type: "text" },
+						{ name: "employees.salary", label: "Salary", type: "number" },
+					]}
+					initialValues={{
+						employees: [
+							{
+								name: "John Doe",
+								role: "Engineer",
+								salary: 75000,
+							},
+						],
+					}}
+					onSubmit={mockSubmit}
+					showSubmit
+				/>,
+			);
+
+			const customInputs = screen.getAllByTestId("custom-input");
+			expect(customInputs).toHaveLength(2);
+			expect(customInputs[0]).toHaveValue("John Doe");
+			expect(customInputs[1]).toHaveValue("Engineer");
+
+			const customNumbers = screen.getAllByTestId("custom-number");
+			expect(customNumbers).toHaveLength(1);
+			expect(customNumbers[0]).toHaveValue(75000);
+		});
+
+		it("interactively manages multiple array fields with mixed custom components", async () => {
+			const schema = z.object({
+				todos: z.array(
+					z.object({
+						title: z.string(),
+						completed: z.boolean(),
+					}),
+				),
+				tags: z.array(z.string()),
+			});
+
+			const CustomTextInput = (props: FieldComponentProps) => {
+				const field = useFieldContext<string>();
+				return (
+					<input
+						type="text"
+						{...props}
+						data-testid="custom-todo-input"
+						value={field.state.value}
+						onChange={(e) => field.handleChange(e.target.value)}
+					/>
+				);
+			};
+
+			const CustomCheckbox = (props: FieldComponentProps) => {
+				const field = useFieldContext<boolean>();
+				return (
+					<input
+						type="checkbox"
+						{...props}
+						data-testid="custom-todo-checkbox"
+						checked={field.state.value}
+						onChange={(e) => field.handleChange(e.target.checked)}
+					/>
+				);
+			};
+
+			const CustomTagInput = (props: FieldComponentProps) => {
+				const field = useFieldContext<string[]>();
+				return (
+					<input
+						type="text"
+						{...props}
+						data-testid="custom-tag-input"
+						placeholder="Add tag..."
+						value={field.state.value?.join(", ") || ""}
+						onChange={(e) => field.handleChange(e.target.value.split(", "))}
+					/>
+				);
+			};
+
+			const user = userEvent.setup();
+
+			render(
+				<Form
+					schema={schema}
+					components={{
+						todoText: CustomTextInput,
+						todoCheck: CustomCheckbox,
+						tagInput: CustomTagInput,
+					}}
+					fields={[
+						{ name: "todos.title", label: "Task", type: "todoText" },
+						{ name: "todos.completed", label: "Done", type: "todoCheck" },
+						{ name: "tags", label: "Tags", type: "tagInput" },
+					]}
+					initialValues={{
+						todos: [{ title: "Learn morphorm", completed: true }],
+						tags: ["react", "forms"],
+					}}
+					onSubmit={mockSubmit}
+					showSubmit
+				/>,
+			);
+
+			const todoInputs = screen.getAllByTestId("custom-todo-input");
+			expect(todoInputs).toHaveLength(1);
+			expect(todoInputs[0]).toHaveValue("Learn morphorm");
+
+			const todoCheckboxes = screen.getAllByTestId("custom-todo-checkbox");
+			expect(todoCheckboxes[0]).toBeChecked();
+
+			const tagInput = screen.getByTestId("custom-tag-input");
+			expect(tagInput).toBeInTheDocument();
+			expect(tagInput).toHaveValue("react, forms");
+
+			const addTodoButton = screen.getByText(/add todos/i);
+			await user.click(addTodoButton);
+
+			await waitFor(() => {
+				const inputs = screen.getAllByTestId("custom-todo-input");
+				expect(inputs).toHaveLength(2);
+			});
+		});
+
+		it("handles array schema with custom scalar type and nested object with custom components", async () => {
+			const schema = z.object({
+				contacts: z.array(
+					z.object({
+						name: z.string(),
+						email: z.string().email(),
+					}),
+				),
+				profile: z.object({
+					name: z.string(),
+					age: z.number(),
+				}),
+			});
+
+			const CustomContactsInput = () => {
+				const field = useFieldContext<{ name: string; email: string }[]>();
+				const items = field.state.value || [];
+
+				const handleAdd = () => {
+					field.handleChange([...items, { name: "", email: "" }]);
+				};
+
+				const handleRemove = (index: number) => {
+					field.handleChange(items.filter((_, i) => i !== index));
+				};
+
+				const handleUpdate = (index: number, key: "name" | "email", value: string) => {
+					const newItems = [...items];
+					const existing = newItems[index];
+					if (existing) {
+						newItems[index] = { ...existing, [key]: value };
+					}
+					field.handleChange(newItems);
+				};
+
+				return (
+					<div data-testid="custom-contacts-container">
+						<div data-testid="custom-contacts-list">
+							{items.length === 0 ? (
+								<div data-testid="no-contacts">No contacts</div>
+							) : (
+								items.map((contact, idx) => (
+									<div
+										key={idx}
+										data-testid={`contact-${idx}`}
+									>
+										<input
+											type="text"
+											data-testid={`contact-name-${idx}`}
+											placeholder="Name"
+											value={contact.name}
+											onChange={(e) => handleUpdate(idx, "name", e.target.value)}
+										/>
+										<input
+											type="email"
+											data-testid={`contact-email-${idx}`}
+											placeholder="Email"
+											value={contact.email}
+											onChange={(e) => handleUpdate(idx, "email", e.target.value)}
+										/>
+										<button
+											type="button"
+											data-testid={`remove-contact-${idx}`}
+											onClick={() => handleRemove(idx)}
+										>
+											Remove
+										</button>
+									</div>
+								))
+							)}
+						</div>
+						<button
+							type="button"
+							data-testid="add-contact"
+							onClick={handleAdd}
+						>
+							Add Contact
+						</button>
+					</div>
+				);
+			};
+
+			const CustomNameInput = (props: FieldComponentProps) => {
+				const field = useFieldContext<string>();
+				return (
+					<input
+						type="text"
+						{...props}
+						data-testid="custom-name-input"
+						value={field.state.value}
+						onChange={(e) => field.handleChange(e.target.value)}
+					/>
+				);
+			};
+
+			const CustomAgeInput = (props: FieldComponentProps) => {
+				const field = useFieldContext<number>();
+				return (
+					<input
+						type="number"
+						{...props}
+						data-testid="custom-age-input"
+						value={field.state.value}
+						onChange={(e) => field.handleChange(Number(e.target.value))}
+					/>
+				);
+			};
+
+			const user = userEvent.setup();
+
+			render(
+				<Form
+					schema={schema}
+					components={{
+						contactsInput: CustomContactsInput,
+						nameInput: CustomNameInput,
+						ageInput: CustomAgeInput,
+					}}
+					fields={[
+						{ name: "contacts", label: "Contacts", type: "contactsInput" },
+						{ name: "profile.name", label: "Name", type: "nameInput" },
+						{ name: "profile.age", label: "Age", type: "ageInput" },
+					]}
+					initialValues={{
+						contacts: [
+							{ name: "John", email: "john@example.com" },
+							{ name: "Jane", email: "jane@example.com" },
+						],
+						profile: { name: "John Doe", age: 30 },
+					}}
+					onSubmit={mockSubmit}
+					showSubmit
+				/>,
+			);
+
+			expect(screen.getByTestId("custom-contacts-container")).toBeInTheDocument();
+			expect(screen.getByTestId("contact-0")).toBeInTheDocument();
+			expect(screen.getByTestId("contact-name-0")).toHaveValue("John");
+			expect(screen.getByTestId("contact-email-0")).toHaveValue("john@example.com");
+			expect(screen.getByTestId("contact-1")).toBeInTheDocument();
+			expect(screen.getByTestId("contact-name-1")).toHaveValue("Jane");
+			expect(screen.getByTestId("contact-email-1")).toHaveValue("jane@example.com");
+			expect(screen.getByTestId("add-contact")).toBeInTheDocument();
+			expect(screen.getByTestId("remove-contact-0")).toBeInTheDocument();
+
+			const nameInput = screen.getByTestId("custom-name-input");
+			expect(nameInput).toHaveValue("John Doe");
+
+			const ageInput = screen.getByTestId("custom-age-input");
+			expect(ageInput).toHaveValue(30);
+
+			expect(screen.queryByText(/no items/i)).not.toBeInTheDocument();
+			expect(screen.queryByText(/add contacts/i)).not.toBeInTheDocument();
+
+			await user.click(screen.getByTestId("add-contact"));
+
+			await waitFor(() => {
+				expect(screen.getByTestId("contact-2")).toBeInTheDocument();
+			});
+			expect(screen.getByTestId("contact-name-2")).toHaveValue("");
+			expect(screen.getByTestId("contact-email-2")).toHaveValue("");
+
+			await user.type(screen.getByTestId("contact-name-2"), "Alice");
+			await user.type(screen.getByTestId("contact-email-2"), "alice@example.com");
+
+			await waitFor(() => {
+				expect(screen.getByTestId("contact-name-2")).toHaveValue("Alice");
+			});
+
+			expect(screen.getByTestId("contact-0")).toBeInTheDocument();
+			expect(screen.getByTestId("contact-1")).toBeInTheDocument();
+
+			const submitButton = screen.getByRole("button", { name: /submit/i });
+			await user.click(submitButton);
+
+			await waitFor(() => {
+				expect(mockSubmit).toHaveBeenCalledWith({
+					contacts: [
+						{ name: "John", email: "john@example.com" },
+						{ name: "Jane", email: "jane@example.com" },
+						{ name: "Alice", email: "alice@example.com" },
+					],
+					profile: { name: "John Doe", age: 30 },
+				});
+			});
+		});
+
+		it("renders array of objects as scalar with custom type", () => {
+			const schema = z.object({
+				teamMembers: z.array(
+					z.object({
+						name: z.string(),
+						role: z.string(),
+					}),
+				),
+			});
+
+			const CustomArrayDisplay = () => {
+				const field = useFieldContext<{ name: string; role: string }[]>();
+				const items = field.state.value || [];
+				return (
+					<div data-testid="custom-array-display">
+						<span data-testid="count">{items.length} members</span>
+						{items.map((item, idx) => (
+							<div
+								key={idx}
+								data-testid={`member-${idx}`}
+							>
+								{item.name} - {item.role}
+							</div>
+						))}
+					</div>
+				);
+			};
+
+			render(
+				<Form
+					schema={schema}
+					components={{
+						teamDisplay: CustomArrayDisplay,
+					}}
+					fields={[{ name: "teamMembers", label: "Team Members", type: "teamDisplay" }]}
+					initialValues={{
+						teamMembers: [
+							{ name: "Alice", role: "Engineer" },
+							{ name: "Bob", role: "Designer" },
+						],
+					}}
+					onSubmit={mockSubmit}
+					showSubmit
+				/>,
+			);
+
+			expect(screen.getByTestId("custom-array-display")).toBeInTheDocument();
+			expect(screen.getByTestId("count")).toHaveTextContent("2 members");
+			expect(screen.getByTestId("member-0")).toHaveTextContent("Alice - Engineer");
+			expect(screen.getByTestId("member-1")).toHaveTextContent("Bob - Designer");
+
+			expect(screen.queryByText(/no items/i)).not.toBeInTheDocument();
+			expect(screen.queryByText(/add team members/i)).not.toBeInTheDocument();
+		});
+	});
 	describe("Watch and Field Dependencies", () => {
 		it("disables field when watched fields are empty", () => {
 			const schema = z.object({

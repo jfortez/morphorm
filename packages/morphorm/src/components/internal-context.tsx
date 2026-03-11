@@ -11,9 +11,9 @@ interface IFormContext<C extends Components = Components> {
 
 const FormKitProvider = createContext<IFormContext>({} as IFormContext);
 
-export const FormComponentsProvider = FormKitProvider.Provider;
+export const InternalProvider = FormKitProvider.Provider;
 
-export const useFormKit = () => {
+export const useFormInternal = () => {
 	const ctx = useContext(FormKitProvider);
 	if (!ctx) {
 		throw new Error("FormComponentsContext not found");

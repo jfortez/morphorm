@@ -1,8 +1,8 @@
-import type { FieldProps } from "./type";
+import type { FieldComponentProps } from "../types";
 
 import { useFieldContext } from "../components/ui/form";
 
-export const CheckboxField = ({ ...props }: FieldProps) => {
+export const CheckboxField = ({ ...props }: FieldComponentProps) => {
 	const field = useFieldContext<boolean>();
 	return (
 		<input

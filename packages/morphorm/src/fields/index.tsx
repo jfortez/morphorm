@@ -1,6 +1,6 @@
 import type { Components } from "../types";
 
-import { useFormKit } from "../components/form-context";
+import { useFormInternal } from "../components/internal-context";
 
 import Input from "./input";
 import Number from "./number";
@@ -50,7 +50,7 @@ const Field = <
 	inputType,
 	...props
 }: BaseFieldProps<C, T> & _InternalProps<C, T>) => {
-	const { components } = useFormKit();
+	const { components } = useFormInternal();
 	const Component = { ...BaseInputComponents, ...(components as C) }[inputType];
 
 	if (!Component) {

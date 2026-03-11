@@ -228,3 +228,15 @@ export type RowOverrides<Z extends z.ZodObject<any>, C extends Components> = (
 	rowIndex: number,
 	fields: FormField<Z, C>[],
 ) => React.JSX.Element;
+export interface FieldAttributes {
+	"aria-describedby": string;
+	"aria-invalid": boolean;
+	className: string;
+	"data-slot": string;
+	id: string;
+	name: string;
+	placeholder?: string;
+	ref?: any;
+}
+
+export type FieldComponentProps<P = any> = P & FieldAttributes;

@@ -289,7 +289,7 @@ export function parseFields<
 			} else if (_field.name && fieldMap.has(_field.name)) {
 				const _fieldSchema = fieldMap.get(_field.name)!;
 				_field.schema = _fieldSchema.schema!;
-				_field.mode = _fieldSchema.type === "array" ? "array" : "value";
+				_field.mode = _field.type ? "value" : _fieldSchema.type === "array" ? "array" : "value";
 			}
 
 			defaultFields.push(_field);

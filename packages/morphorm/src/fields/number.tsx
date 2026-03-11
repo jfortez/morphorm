@@ -1,8 +1,8 @@
-import type { FieldProps } from "./type";
+import type { FieldComponentProps } from "../types";
 
 import { useFieldContext } from "../components/ui/form";
 
-export const NumberField = ({ ...props }: FieldProps) => {
+export const NumberField = ({ ...props }: FieldComponentProps) => {
 	const field = useFieldContext<number | string>();
 	const numTestId = `number-${field.name}`;
 	const inputTestId = `input-${field.name}`;

@@ -4,4 +4,4 @@ export { FormSubmit } from "./components/submit";
 export { SubmitTrigger, CancelTrigger } from "./components/triggers";
 export { useFieldContext } from "./components/ui/form";
 export { defineFields } from "./core/layout";
-export type { FieldsConfig, FieldTransformer, FormField } from "./types";
+export type { FieldsConfig, FieldTransformer, FormField, FieldComponentProps } from "./types";

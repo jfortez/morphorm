@@ -1,4 +1,4 @@
-import type { FieldProps } from "./type";
+import type { FieldComponentProps } from "../types";
 
 import { useFieldContext } from "../components/ui/form";
 
@@ -6,7 +6,7 @@ export interface SelectProps {
 	options: { value: string; label: string }[];
 }
 
-export const SelectField = ({ options, ...props }: FieldProps<SelectProps>) => {
+export const SelectField = ({ options, ...props }: FieldComponentProps<SelectProps>) => {
 	const field = useFieldContext<string>();
 	return (
 		<select

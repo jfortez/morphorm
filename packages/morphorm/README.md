@@ -13,6 +13,7 @@ A powerful, type-safe form component library built on top of TanStack Form with 
 - **Row Overrides**: Custom row wrappers for layout control
 - **Array Fields**: Support for dynamic array manipulation
 - **Custom Components**: Extend with your own field components
+- **Array Override**: Override array mode to scalar with custom types
 
 ## Installation
 
@@ -25,7 +26,7 @@ bun install
 ## Quick Start
 
 ```tsx
-import { Forma } from "morphorm";
+import { Form } from "morphorm";
 import { z } from "zod";
 
 const schema = z.object({
@@ -36,7 +37,7 @@ const schema = z.object({
 
 function MyForm() {
 	return (
-		<Forma
+		<Form
 			schema={schema}
 			onSubmit={async (values) => {
 				console.log("Submitted:", values);
@@ -47,12 +48,57 @@ function MyForm() {
 }
 ```
 
+## Type Safety
+
+Morphorm provides full TypeScript inference from your Zod schema. The form values are automatically typed:
+
+```tsx
+import { Form, type FieldsConfig } from "morphorm";
+import { z } from "zod";
+
+const schema = z.object({
+	name: z.string().min(1, "Name is required"),
+	email: z.string().email("Invalid email"),
+	age: z.number().min(0).optional(),
+});
+
+// Fields configuration is fully type-safe
+const fields: FieldsConfig<typeof schema> = [
+	{
+		name: "name",
+		type: "text",
+		label: "Full Name",
+		placeholder: "Enter your name",
+		size: 6,
+	},
+	{
+		name: "email",
+		type: "text",
+		label: "Email Address",
+		size: 6,
+	},
+];
+
+// onSubmit receives correctly typed values
+function handleSubmit(values: z.infer<typeof schema>) {
+	// values is typed as { name: string; email: string; age?: number }
+	console.log(values.name);
+}
+
+<Form
+	schema={schema}
+	fields={fields}
+	onSubmit={handleSubmit}
+	showSubmit
+/>
+```
+
 ## Field Configuration
 
 ### Basic Fields
 
 ```tsx
-<Forma
+<Form
 	schema={schema}
 	fields={[
 		{
@@ -112,7 +158,7 @@ function MyForm() {
 	};
 
 	return (
-		<Forma
+		<Form
 			schema={schema}
 			context={context}
 			fields={[
@@ -147,7 +193,7 @@ const citiesByState: Record<string, string[]> = {
 	newyork: ["New York City", "Buffalo"],
 };
 
-<Forma
+<Form
 	schema={schema}
 	fields={[
 		{
@@ -269,7 +315,7 @@ Wrap the field with custom UI:
 Customize the rendering of entire rows:
 
 ```tsx
-<Forma
+<Form
 	schema={schema}
 	fields={[
 		{ name: "name", type: "text", label: "Name", size: 6 },
@@ -293,7 +339,7 @@ Customize the rendering of entire rows:
 Add content after the field rows:
 
 ```tsx
-<Forma
+<Form
   schema={schema}
   fields={[...]}
   rowChildren={
@@ -318,7 +364,7 @@ const schema = z.object({
 	),
 });
 
-<Forma
+<Form
 	schema={schema}
 	// Array fields are automatically rendered with collapsible sections
 	// Add/remove buttons are provided automatically
@@ -327,7 +373,9 @@ const schema = z.object({
 
 ## Custom Components
 
-Extend Forma with custom field components:
+Extend Form with custom field components:
+
+### Basic Usage
 
 ```tsx
 const CustomInput = (props) => (
@@ -354,7 +402,7 @@ const CustomSelect = ({ items, value, onChange, ...props }) => (
 	</select>
 );
 
-<Forma
+<Form
 	schema={schema}
 	components={{
 		text: CustomInput,
@@ -363,12 +411,137 @@ const CustomSelect = ({ items, value, onChange, ...props }) => (
 />;
 ```
 
+### Using Custom Types in Fields
+
+You can define custom types in the `fields` configuration to use your custom components:
+
+```tsx
+const CustomTextInput = (props) => (
+	<input type="text" {...props} />
+);
+
+const CustomCheckbox = (props) => (
+	<input type="checkbox" {...props} />
+);
+
+<Form
+	schema={schema}
+	components={{
+		customText: CustomTextInput,
+		customCbx: CustomCheckbox,
+	}}
+	fields={[
+		{ name: "title", label: "Task Title", type: "customText" },
+		{ name: "completed", label: "Done", type: "customCbx" },
+	]}
+/>
+```
+
+### Overriding Array Mode
+
+By default, array schemas in the schema are rendered with add/remove buttons. However, when you specify a custom `type` in the fields configuration for an array field, it overrides the array mode and renders as a scalar field using your custom component:
+
+```tsx
+const schema = z.object({
+	contacts: z.array(
+		z.object({
+			name: z.string(),
+			email: z.string().email(),
+		}),
+	),
+	profile: z.object({
+		name: z.string(),
+		age: z.number(),
+	}),
+});
+
+// Custom component that manages its own array items
+const CustomContactsInput = () => {
+	const field = useFieldContext<{ name: string; email: string }[]>();
+	const items = field.state.value || [];
+
+	const handleAdd = () => {
+		field.handleChange([...items, { name: "", email: "" }]);
+	};
+
+	const handleRemove = (index: number) => {
+		field.handleChange(items.filter((_, i) => i !== index));
+	};
+
+	const handleUpdate = (index, key, value) => {
+		const newItems = [...items];
+		newItems[index] = { ...newItems[index], [key]: value };
+		field.handleChange(newItems);
+	};
+
+	return (
+		<div>
+			{items.map((contact, idx) => (
+				<div key={idx}>
+					<input
+						value={contact.name}
+						onChange={(e) => handleUpdate(idx, "name", e.target.value)}
+					/>
+					<input
+						value={contact.email}
+						onChange={(e) => handleUpdate(idx, "email", e.target.value)}
+					/>
+					<button onClick={() => handleRemove(idx)}>Remove</button>
+				</div>
+			))}
+			<button onClick={handleAdd}>Add Contact</button>
+		</div>
+	);
+};
+
+<Form
+	schema={schema}
+	components={{
+		contactsInput: CustomContactsInput,
+	}}
+	fields={[
+		// This overrides the default array mode and uses your custom component
+		{ name: "contacts", label: "Contacts", type: "contactsInput" },
+		{ name: "profile.name", label: "Name", type: "text" },
+		{ name: "profile.age", label: "Age", type: "number" },
+	]}
+/>
+```
+
+This works for both primitive arrays and object arrays:
+
+```tsx
+// Primitive array
+const schema = z.object({
+	tags: z.array(z.string()),
+});
+
+// Object array
+const schema = z.object({
+	teamMembers: z.array(
+		z.object({
+			name: z.string(),
+			role: z.string(),
+		}),
+	),
+});
+
+// Both can use custom type to override array mode
+<Form
+	schema={schema}
+	fields={[
+		{ name: "tags", type: "customTagInput" },
+		{ name: "teamMembers", type: "customTeamInput" },
+	]}
+/>
+```
+
 ## Form State Management
 
 Monitor form state changes:
 
 ```tsx
-<Forma
+<Form
 	schema={schema}
 	onStateChange={(state) => {
 		console.log("Can submit:", state.canSubmit);
@@ -383,7 +556,7 @@ Monitor form state changes:
 Populate form with existing data:
 
 ```tsx
-<Forma
+<Form
 	schema={schema}
 	initialValues={{
 		name: "John Doe",
@@ -395,7 +568,7 @@ Populate form with existing data:
 
 ## Validation
 
-Forma uses Zod for validation. Errors are automatically displayed:
+Form uses Zod for validation. Errors are automatically displayed:
 
 ```tsx
 const schema = z.object({
@@ -406,7 +579,7 @@ const schema = z.object({
 
 ## Props Reference
 
-### Forma Props
+### Form Props
 
 | Prop               | Type                                    | Description               |
 | ------------------ | --------------------------------------- | ------------------------- |
@@ -476,7 +649,7 @@ Functions receive an args object with:
 Run tests:
 
 ```bash
-bun test Forma.test.tsx
+bun test Form.test.tsx
 ```
 
 ## Examples
