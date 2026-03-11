@@ -1,5 +1,13 @@
 # Morphorm
 
+## 0.2.1
+
+### Patch Changes
+
+- ae336ca: Add custom type override for array fields
+- 428f644: add trigger components for composition
+- 2fa08b2: support for multiple forms based on scope
+
 ## 0.2.0
 
 ### Minor Changes
