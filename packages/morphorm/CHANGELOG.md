@@ -1,5 +1,11 @@
 # Morphorm
 
+## 0.2.4
+
+### Patch Changes
+
+- 0a5d2db: chore: re-release
+
 ## 0.2.3
 
 ### Patch Changes
