@@ -1,5 +1,11 @@
 # Morphorm
 
+## 0.2.2
+
+### Patch Changes
+
+- 41e41e0: Removed deprecated form-field and form-hook components. Simplified internal context and form handling logic.
+
 ## 0.2.1
 
 ### Patch Changes
