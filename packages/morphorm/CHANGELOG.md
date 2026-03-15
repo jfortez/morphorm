@@ -1,5 +1,11 @@
 # Morphorm
 
+## 0.2.6
+
+### Patch Changes
+
+- re-release
+
 ## 0.2.5
 
 ### Patch Changes
