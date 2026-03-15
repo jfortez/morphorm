@@ -1,7 +1,17 @@
 {
 	"name": "@morphorm/core",
-	"version": "0.1.0",
-	"private": true,
+	"version": "0.1.23",
+	"description": "Core schema validation and parsing for morphorm",
+	"license": "MIT",
+	"author": {
+		"name": "Jean Caiza",
+		"email": "jeanmcm@hotmail.com",
+		"url": "https://github.com/jfortez"
+	},
+	"repository": {
+		"type": "git ",
+		"url": "git+https://github.com/jfortez/morphorm.git"
+	},
 	"files": [
 		"dist"
 	],
@@ -45,6 +55,9 @@
 				"default": "./dist/schema/valibot/index.mjs"
 			}
 		}
+	},
+	"publishConfig": {
+		"access": "public"
 	},
 	"scripts": {
 		"build": "tsdown",
