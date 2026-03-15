@@ -29,7 +29,7 @@
 		"release": "bun run build && changeset publish",
 		"release:core": "bun run build:core && changeset publish --filter=@morphorm/core",
 		"release:morphorm": "bun run build:morphorm && changeset publish --filter=morphorm",
-		"release:all": "bun run build:pkg && changeset publish",
+		"release:all": "changeset publish",
 		"build:core": "turbo run build --filter=@morphorm/core",
 		"build:morphorm": "turbo run build --filter=morphorm",
 		"prepare": "husky"
