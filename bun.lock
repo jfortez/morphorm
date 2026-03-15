@@ -43,7 +43,7 @@
     },
     "packages/core": {
       "name": "@morphorm/core",
-      "version": "0.1.0",
+      "version": "0.1.23",
       "devDependencies": {
         "@types/bun": "latest",
         "tsdown": "^0.21.0-beta.2",

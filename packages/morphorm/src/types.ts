@@ -1,7 +1,7 @@
 // oxlint-disable typescript/no-explicit-any
 import type * as z from "zod";
 
-import type { FieldType } from "./fields";
+import type { FieldType } from "./components/render-field";
 import type { FormFieldType } from "./components/field";
 
 export type Components = Record<string, React.ComponentType<any>>;
