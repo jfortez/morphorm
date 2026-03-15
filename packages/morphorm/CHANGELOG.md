@@ -1,5 +1,11 @@
 # Morphorm
 
+## 0.2.5
+
+### Patch Changes
+
+- 1c80e51: re-release
+
 ## 0.2.4
 
 ### Patch Changes
