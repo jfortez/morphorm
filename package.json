@@ -25,6 +25,8 @@
 		"test": "turbo run test",
 		"check-types": "turbo run check-types",
 		"changeset": "changeset",
+		"ci:version": "changeset version && bun update",
+		"ci:publish": "for dir in packages/*; do (cd \"$dir\" && bun publish || true); done && changeset tag",
 		"version-packages": "changeset version",
 		"release": "bun run build && changeset publish",
 		"release:core": "bun run build:core && changeset publish --filter=@morphorm/core",

@@ -41,23 +41,14 @@ jobs:
       - name: Run Tests
         run: bun test
 
-      - name: Create Release Pull Request or Version Packages
-        id: changesets
+      - name: Create and publish versions
         uses: changesets/action@v1
         with:
-          version: bun run version-packages
+          version: bun run ci:version
+          publish: bun run ci:publish
           commit: "chore: version packages"
           title: "chore: version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install to resolve workspace deps
-        if: steps.changesets.outputs.published == 'true'
-        run: bun install
-
-      - name: Publish to npm
-        if: steps.changesets.outputs.published == 'true'
-        run: bun run release:all
-        env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
