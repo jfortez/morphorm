@@ -1,5 +1,11 @@
 # Morphorm
 
+## 0.2.3
+
+### Patch Changes
+
+- 5b52306: fix missing types
+
 ## 0.2.2
 
 ### Patch Changes
