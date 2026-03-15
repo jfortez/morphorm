@@ -2,7 +2,7 @@
 import type * as z from "zod";
 
 import type { FieldType } from "./fields";
-import type { FormFieldType } from "./components/form-field";
+import type { FormFieldType } from "./components/field";
 
 export type Components = Record<string, React.ComponentType<any>>;
 

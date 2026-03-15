@@ -2,7 +2,7 @@
 import type { z } from "zod";
 import type { ParsedField } from "@morphorm/core/types";
 
-import type { FieldType } from "../fields";
+import type { FieldType } from "../components/render-field";
 import type {
 	AutoField,
 	Components,

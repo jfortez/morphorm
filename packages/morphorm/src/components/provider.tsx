@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useRef } from "react";
 
-import type { useAppForm } from "./form-hook";
+import type { useAppForm } from "./hooks";
 
 type FormInstance = ReturnType<typeof useAppForm>;
 

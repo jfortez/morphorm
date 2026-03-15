@@ -4,10 +4,8 @@ import { useMemo } from "react";
 
 import type { z } from "zod";
 
-import type { FieldType } from "../fields";
 import type { Components, ContextType, CustomPropertyArgs, ValueOrFunction } from "../types";
 
-import Field from "../fields";
 import {
 	FieldControl,
 	FieldDescription,
@@ -15,6 +13,7 @@ import {
 	FieldLabel,
 	Field as FieldPrimitive,
 } from "./ui/form";
+import RenderField, { type FieldType } from "./render-field";
 
 interface _SharedFieldProps {
 	label?: string | React.ReactNode;
@@ -140,7 +139,7 @@ const FormField = <
 				{metadata.element ? (
 					metadata.element
 				) : (
-					<Field
+					<RenderField
 						name={metadata.name}
 						inputType={metadata.type as FieldType<C>}
 						{...metadata.fieldProps}

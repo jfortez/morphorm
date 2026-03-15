@@ -15,14 +15,15 @@ import { Label } from "./ui/label";
 import { Form as PrimitiveForm, useFormContext } from "./ui/form";
 import { InternalProvider, useFormInternal } from "./internal-context";
 import { FormaContext } from "./provider";
-import Field from "./form-field";
-import { useAppForm } from "./form-hook";
+import { useAppForm } from "./hooks";
 import { FormSubmit, type FormaSubmitProps } from "./submit";
 import { parseFields } from "../core/layout";
 import { ZodProvider } from "@morphorm/core/zod";
 import { PlusIcon, TrashIcon } from "./ui/icons";
 import { buildArrayItemFields, buildRenderModel, normalizeFields } from "../core/render-model";
 import { createStableWatchSelector } from "../core/watch";
+import Field from "./field";
+
 import "./styles.css";
 
 export interface FormState {
@@ -319,12 +320,12 @@ export const Form = <
 	const hasFormaProvider = formaContext !== null;
 
 	const schemaProvider = useMemo(() => new ZodProvider(schema), [schema]);
-	const parsedFields = useMemo(() => {
-		const parsed = schemaProvider.parseSchema();
-		return parseFields(fields, parsed.fields);
-	}, [schemaProvider, fields]);
+	const fieldNodes = useMemo(() => {
+		const schemaParsed = schemaProvider.parseSchema();
+		const parsedFields = parseFields(fields, schemaParsed.fields);
 
-	const normalizedNodes = useMemo(() => normalizeFields(parsedFields), [parsedFields]);
+		return normalizeFields(parsedFields);
+	}, [schemaProvider, fields]);
 
 	const defaultValues = useMemo<z.input<Z>>(() => {
 		if (initialValues) {
@@ -362,11 +363,11 @@ export const Form = <
 	};
 
 	return (
-		<InternalProvider value={{ components, context, schema: parsedFields }}>
+		<InternalProvider value={{ components, context }}>
 			<form.AppForm>
 				<PrimitiveForm className="formaRoot">
 					<RenderGrid
-						nodes={normalizedNodes}
+						nodes={fieldNodes}
 						rowOverrides={rowOverrides as never}
 						rowChildren={rowChildren}
 					/>

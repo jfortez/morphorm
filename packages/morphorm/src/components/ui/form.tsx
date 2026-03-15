@@ -1,7 +1,7 @@
 "use client";
 
 import { Slot } from "@radix-ui/react-slot";
-import { createFormHookContexts, useStore } from "@tanstack/react-form";
+import { useStore } from "@tanstack/react-form";
 import * as React from "react";
 
 import {
@@ -10,8 +10,7 @@ import {
 	FieldError as FieldErrorBase,
 	FieldLabel as FieldLabelBase,
 } from "./field";
-
-const { useFieldContext, useFormContext, fieldContext, formContext } = createFormHookContexts();
+import { useFieldContext, useFormContext } from "../hooks";
 
 function Form(props: React.ComponentProps<"form">) {
 	const form = useFormContext();
@@ -170,8 +169,6 @@ export {
 	FieldControl,
 	FieldDescription,
 	FieldError,
-	fieldContext,
 	useFieldContext,
-	formContext,
 	useFormContext,
 };

@@ -1,11 +1,9 @@
 import { createContext, useContext } from "react";
 
 import type { Components } from "../types";
-import type { InternalField } from "../core/layout";
 
 interface IFormContext<C extends Components = Components> {
 	components?: C;
-	schema: InternalField[];
 	context?: any;
 }
 
