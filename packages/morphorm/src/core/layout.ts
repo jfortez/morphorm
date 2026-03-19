@@ -2,10 +2,10 @@
 import type { z } from "zod";
 import type { ParsedField } from "@morphorm/core/types";
 
-import type { FieldType } from "../components/render-field";
+import type { FieldType } from "@/types";
 import type {
 	AutoField,
-	Components,
+	FieldComponents,
 	ContextType,
 	FieldTransformFunction,
 	FieldTransformObject,
@@ -117,7 +117,9 @@ export function generateGrid<Z extends z.ZodObject<any>>(
 	return result;
 }
 
-const toBaseType = <C extends Components = NonNullable<unknown>>(type: string): FieldType<C> => {
+const toBaseType = <C extends FieldComponents = NonNullable<unknown>>(
+	type: string,
+): FieldType<C> => {
 	if (type === "string") {
 		return "text" as FieldType<C>;
 	}
@@ -149,7 +151,7 @@ const parseNestedPath = (name: string): { parentKey: string | null; childKey: st
 
 function isFieldsArray<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
-	C extends Components = NonNullable<unknown>,
+	C extends FieldComponents = NonNullable<unknown>,
 	Context extends ContextType = ContextType,
 >(fields: FieldsConfig<Z, C, Context>): fields is FormField<Z, C, Context>[] {
 	return Array.isArray(fields);
@@ -157,7 +159,7 @@ function isFieldsArray<
 
 function isFieldsFunction<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
-	C extends Components = NonNullable<unknown>,
+	C extends FieldComponents = NonNullable<unknown>,
 	Context extends ContextType = ContextType,
 >(fields: FieldsConfig<Z, C, Context>): fields is FieldTransformFunction<Z, C, Context> {
 	return typeof fields === "function";
@@ -165,7 +167,7 @@ function isFieldsFunction<
 
 function isFieldsObject<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
-	C extends Components = NonNullable<unknown>,
+	C extends FieldComponents = NonNullable<unknown>,
 	Context extends ContextType = ContextType,
 >(fields: FieldsConfig<Z, C, Context>): fields is FieldTransformObject<Z, C, Context> {
 	return typeof fields === "object" && !Array.isArray(fields);
@@ -173,7 +175,7 @@ function isFieldsObject<
 
 export function parseFields<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
-	C extends Components = NonNullable<unknown>,
+	C extends FieldComponents = NonNullable<unknown>,
 	Context extends ContextType = ContextType,
 >(
 	fields: FieldsConfig<Z, C, Context> | undefined,

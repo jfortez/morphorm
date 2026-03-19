@@ -27,7 +27,11 @@
 		"noPropertyAccessFromIndexSignature": false,
 
 		// Types for testing
-		"types": ["bun", "@testing-library/jest-dom"]
+		"types": ["bun", "@testing-library/jest-dom"],
+		"baseUrl": ".",
+		"paths": {
+			"@/*": ["src/*"]
+		}
 	},
 	"include": ["src/**/*", "jest-dom.d.ts"],
 	"exclude": ["node_modules"]

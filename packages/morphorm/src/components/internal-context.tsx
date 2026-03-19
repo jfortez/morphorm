@@ -1,8 +1,8 @@
 import { createContext, useContext } from "react";
 
-import type { Components } from "../types";
+import type { FieldComponents } from "../types";
 
-interface IFormContext<C extends Components = Components> {
+interface IFormContext<C extends FieldComponents = FieldComponents> {
 	components?: C;
 	context?: any;
 }

@@ -378,7 +378,7 @@ describe("Morphorm", () => {
 				),
 			});
 
-			const CustomTextInput = (props: FieldComponentProps) => (
+			const CustomTextInput = (props: FieldComponentProps<{ foo: "bar" }>) => (
 				<input
 					type="text"
 					{...props}
@@ -386,7 +386,7 @@ describe("Morphorm", () => {
 				/>
 			);
 
-			const CustomCheckbox = (props: FieldComponentProps) => (
+			const CustomCheckbox = (props: FieldComponentProps<{ bar: "baz" }>) => (
 				<input
 					type="checkbox"
 					{...props}
@@ -395,14 +395,15 @@ describe("Morphorm", () => {
 			);
 
 			const user = userEvent.setup();
+			const components = {
+				customText: CustomTextInput,
+				customCbx: CustomCheckbox,
+			} as const;
 
 			render(
 				<Form
 					schema={schema}
-					components={{
-						customText: CustomTextInput,
-						customCbx: CustomCheckbox,
-					}}
+					components={components}
 					fields={[
 						{
 							name: "tasks.title",

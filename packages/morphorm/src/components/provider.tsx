@@ -1,8 +1,8 @@
 import { createContext, useCallback, useContext, useMemo, useRef } from "react";
 
-import type { useAppForm } from "./hooks";
+import type { UseAppFormType } from "@/types";
 
-type FormInstance = ReturnType<typeof useAppForm>;
+type FormInstance = ReturnType<UseAppFormType>;
 
 export interface IFormaContext {
 	mode: "single" | "combined";

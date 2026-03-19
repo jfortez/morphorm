@@ -5,7 +5,7 @@ import TextArea from "./textarea";
 import Select from "./select";
 import Radio from "./radio";
 
-export const defaultComponents = {
+export const defaultFieldComponents = {
 	checkbox: Checkbox,
 	number: Number,
 	radio: Radio,
@@ -14,4 +14,4 @@ export const defaultComponents = {
 	textarea: TextArea,
 };
 
-export type DefaultComponentTypes = keyof typeof defaultComponents;
+export type DefaultComponentTypes = keyof typeof defaultFieldComponents;

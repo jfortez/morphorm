@@ -1,10 +1,11 @@
 // oxlint-disable typescript/no-explicit-any
 import type * as z from "zod";
 
-import type { FieldType } from "./components/render-field";
-import type { FormFieldType } from "./components/field";
+import type { createFormHook } from "@tanstack/react-form";
 
-export type Components = Record<string, React.ComponentType<any>>;
+export type UseAppFormType = ReturnType<typeof createFormHook>["useAppForm"];
+
+export type FieldComponents = Record<string, React.ComponentType<any>>;
 
 export type Sizes = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
@@ -77,6 +78,56 @@ export interface CustomPropertyArgs<
 
 export type ValueOrFunction<T, Args> = T | ((args: Args) => T);
 
+interface _SharedFieldProps {
+	label?: string | React.ReactNode;
+	placeholder?: string;
+	description?: string;
+	disabled?: boolean;
+}
+
+export type FieldType<C extends FieldComponents = FieldComponents> = keyof C;
+
+type ValueOrFunctionProps<P, Args> = {
+	[K in keyof P]: ValueOrFunction<P[K], Args>;
+};
+
+type ExtractFieldProps<T, Args> =
+	T extends React.ComponentType<infer Props>
+		? Props extends FieldComponentProps<infer P>
+			? [P] extends [Record<string, never>]
+				? never
+				: ValueOrFunctionProps<P, Args>
+			: ValueOrFunctionProps<Omit<Props, keyof FieldAttributes>, Args>
+		: never;
+
+type FormFieldMap<
+	C extends FieldComponents = FieldComponents,
+	Z extends z.ZodObject<any> = z.ZodObject<any>,
+	Context extends ContextType = ContextType,
+> = {
+	[K in FieldType<C>]: {
+		name: string;
+		element?: React.ReactNode;
+		type: K;
+		fieldProps?: ExtractFieldProps<C[K], CustomPropertyArgs<Z, Context>>;
+		overrides?: (
+			originalElement: React.JSX.Element,
+			meta: FormFieldType<C, Z, Context>,
+		) => React.ReactNode;
+	} & {
+		[Key in keyof _SharedFieldProps]?: ValueOrFunction<
+			Required<_SharedFieldProps>[Key],
+			CustomPropertyArgs<Z, Context>
+		>;
+	};
+};
+
+export type FormFieldType<
+	C extends FieldComponents = NonNullable<unknown>,
+	Z extends z.ZodObject<any> = z.ZodObject<any>,
+	Context extends ContextType = ContextType,
+> = FormFieldMap<C, Z, Context>[FieldType<C>];
+
 type CustomPropertyFn<
 	T,
 	Z extends z.ZodObject<any>,
@@ -107,7 +158,7 @@ export interface BaseField<
 
 export type FormaFieldBase<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
-	C extends Components = NonNullable<unknown>,
+	C extends FieldComponents = NonNullable<unknown>,
 	Context extends ContextType = ContextType,
 	Name extends FieldName<Z> = FieldName<Z>,
 	Watch extends FieldWatch<Z, Name> = FieldWatch<Z, Name>,
@@ -124,7 +175,7 @@ export type FormaFieldBase<
 
 export type FormField<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
-	C extends Components = NonNullable<unknown>,
+	C extends FieldComponents = NonNullable<unknown>,
 	Context extends ContextType = ContextType,
 > =
 	| {
@@ -138,7 +189,7 @@ export type FormSubmitHandler<Z extends z.ZodObject<any>> = (
 	values: z.infer<Z>,
 ) => MaybePromise<void>;
 
-export interface AutoField<C extends Components = NonNullable<unknown>> {
+export interface AutoField<C extends FieldComponents = NonNullable<unknown>> {
 	name: FieldName<z.ZodObject<any>>;
 	type: FieldType<C>;
 	label?: string;
@@ -148,7 +199,7 @@ export interface AutoField<C extends Components = NonNullable<unknown>> {
 
 export type TransformedField<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
-	C extends Components = NonNullable<unknown>,
+	C extends FieldComponents = NonNullable<unknown>,
 	Context extends ContextType = ContextType,
 > = AutoField<C> &
 	Partial<
@@ -161,13 +212,13 @@ export type TransformedField<
 
 export type FieldTransformFunction<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
-	C extends Components = NonNullable<unknown>,
+	C extends FieldComponents = NonNullable<unknown>,
 	Context extends ContextType = ContextType,
 > = (fields: AutoField<C>[]) => TransformedField<Z, C, Context>[];
 
 export interface FieldObjectConfig<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
-	C extends Components = NonNullable<unknown>,
+	C extends FieldComponents = NonNullable<unknown>,
 	Context extends ContextType = ContextType,
 	Name extends FieldName<Z> = FieldName<Z>,
 	Watch extends FieldWatch<Z, Name> = FieldWatch<Z, Name>,
@@ -185,7 +236,7 @@ export interface FieldObjectConfig<
 
 export type FieldTransformValue<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
-	C extends Components = NonNullable<unknown>,
+	C extends FieldComponents = NonNullable<unknown>,
 	Context extends ContextType = ContextType,
 	Name extends FieldName<Z> = FieldName<Z>,
 > =
@@ -194,7 +245,7 @@ export type FieldTransformValue<
 
 export type FieldTransformObject<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
-	C extends Components = NonNullable<unknown>,
+	C extends FieldComponents = NonNullable<unknown>,
 	Context extends ContextType = ContextType,
 > = Partial<{
 	[K in FieldName<Z>]:
@@ -204,12 +255,12 @@ export type FieldTransformObject<
 
 export type FieldTransformer<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
-	C extends Components = NonNullable<unknown>,
+	C extends FieldComponents = NonNullable<unknown>,
 > = FieldTransformObject<Z, C> | FieldTransformFunction<Z, C>;
 
 export type FieldsConfig<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
-	C extends Components = NonNullable<unknown>,
+	C extends FieldComponents = NonNullable<unknown>,
 	Context extends ContextType = ContextType,
 > =
 	| FormField<Z, C, Context>[]
@@ -223,7 +274,7 @@ export interface Option {
 
 export type SelectOptions = Option[] | Promise<Option[]>;
 
-export type RowOverrides<Z extends z.ZodObject<any>, C extends Components> = (
+export type RowOverrides<Z extends z.ZodObject<any>, C extends FieldComponents> = (
 	gridElement: React.JSX.Element,
 	rowIndex: number,
 	fields: FormField<Z, C>[],
@@ -239,4 +290,4 @@ export interface FieldAttributes {
 	ref?: any;
 }
 
-export type FieldComponentProps<P = any> = P & FieldAttributes;
+export type FieldComponentProps<P = object> = P & FieldAttributes;

@@ -1,10 +1,10 @@
 // oxlint-disable typescript/no-explicit-any
-import type React from "react";
+
 import { useMemo } from "react";
 
 import type { z } from "zod";
 
-import type { Components, ContextType, CustomPropertyArgs, ValueOrFunction } from "../types";
+import type { FieldComponents, ContextType, FormFieldType } from "../types";
 
 import {
 	FieldControl,
@@ -13,45 +13,10 @@ import {
 	FieldLabel,
 	Field as FieldPrimitive,
 } from "./ui/form";
-import RenderField, { type FieldType } from "./render-field";
-
-interface _SharedFieldProps {
-	label?: string | React.ReactNode;
-	placeholder?: string;
-	description?: string;
-	disabled?: boolean;
-}
-
-type FormFieldMap<
-	C extends Components = NonNullable<unknown>,
-	Z extends z.ZodObject<any> = z.ZodObject<any>,
-	Context extends ContextType = ContextType,
-> = {
-	[K in FieldType<C>]: {
-		name: string;
-		element?: React.ReactNode;
-		type: K;
-		fieldProps?: Record<string, unknown>;
-		overrides?: (
-			originalElement: React.JSX.Element,
-			meta: FormFieldType<C, Z, Context>,
-		) => React.ReactNode;
-	} & {
-		[Key in keyof _SharedFieldProps]?: ValueOrFunction<
-			Required<_SharedFieldProps>[Key],
-			CustomPropertyArgs<Z, Context>
-		>;
-	};
-};
-
-export type FormFieldType<
-	C extends Components = NonNullable<unknown>,
-	Z extends z.ZodObject<any> = z.ZodObject<any>,
-	Context extends ContextType = ContextType,
-> = FormFieldMap<C, Z, Context>[FieldType<C>];
+import RenderField from "./render-field";
 
 interface FormInputProps<
-	C extends Components = NonNullable<unknown>,
+	C extends FieldComponents = NonNullable<unknown>,
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
 	Context extends ContextType = ContextType,
 > {
@@ -61,7 +26,7 @@ interface FormInputProps<
 }
 
 const FormField = <
-	C extends Components = NonNullable<unknown>,
+	C extends FieldComponents = NonNullable<unknown>,
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
 	Context extends ContextType = ContextType,
 >({
@@ -77,9 +42,9 @@ const FormField = <
 		keys.forEach((key) => {
 			const value = _metadata[key];
 			if (key === "fieldProps" && value && typeof value === "object") {
-				const fieldProps = value as Record<string, unknown>;
-				const hasDynamicFieldProps = Object.values(fieldProps).some((v) => typeof v === "function");
-				if (hasDynamicFieldProps) {
+				const metaProps = value as Record<string, unknown>;
+				const hasCustomMetaValue = Object.values(metaProps).some((v) => typeof v === "function");
+				if (hasCustomMetaValue) {
 					dynamic.push(key);
 				} else {
 					staticProps[key as string] = value;
@@ -141,7 +106,7 @@ const FormField = <
 				) : (
 					<RenderField
 						name={metadata.name}
-						inputType={metadata.type as FieldType<C>}
+						inputType={metadata.type}
 						{...metadata.fieldProps}
 						placeholder={metadata.placeholder}
 						disabled={metadata.disabled}
