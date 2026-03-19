@@ -90,7 +90,7 @@ function handleSubmit(values: z.infer<typeof schema>) {
 	fields={fields}
 	onSubmit={handleSubmit}
 	showSubmit
-/>
+/>;
 ```
 
 ## Field Configuration
@@ -378,7 +378,7 @@ Extend Form with custom field components:
 ### Basic Usage
 
 ```tsx
-const CustomInput = (props) => (
+const CustomInput = (props: FieldComponentProps) => (
 	<input
 		{...props}
 		className="custom-input"
@@ -417,11 +417,17 @@ You can define custom types in the `fields` configuration to use your custom com
 
 ```tsx
 const CustomTextInput = (props) => (
-	<input type="text" {...props} />
+	<input
+		type="text"
+		{...props}
+	/>
 );
 
 const CustomCheckbox = (props) => (
-	<input type="checkbox" {...props} />
+	<input
+		type="checkbox"
+		{...props}
+	/>
 );
 
 <Form
@@ -434,7 +440,7 @@ const CustomCheckbox = (props) => (
 		{ name: "title", label: "Task Title", type: "customText" },
 		{ name: "completed", label: "Done", type: "customCbx" },
 	]}
-/>
+/>;
 ```
 
 ### Overriding Array Mode
@@ -505,7 +511,7 @@ const CustomContactsInput = () => {
 		{ name: "profile.name", label: "Name", type: "text" },
 		{ name: "profile.age", label: "Age", type: "number" },
 	]}
-/>
+/>;
 ```
 
 This works for both primitive arrays and object arrays:
@@ -533,7 +539,7 @@ const schema = z.object({
 		{ name: "tags", type: "customTagInput" },
 		{ name: "teamMembers", type: "customTeamInput" },
 	]}
-/>
+/>;
 ```
 
 ## Form State Management
@@ -581,21 +587,23 @@ const schema = z.object({
 
 ### Form Props
 
-| Prop               | Type                                    | Description               |
-| ------------------ | --------------------------------------- | ------------------------- |
-| `schema`           | `z.ZodObject`                           | Zod schema for validation |
-| `fields`           | `FieldKit[]`                            | Field configurations      |
-| `initialValues`    | `Partial<z.infer<Z>>`                   | Initial form values       |
-| `onSubmit`         | `(values: z.infer<Z>) => Promise<void>` | Submit handler            |
-| `onCancel`         | `() => void`                            | Cancel handler            |
-| `onStateChange`    | `(state: FormState) => void`            | State change handler      |
-| `components`       | `Components`                            | Custom field components   |
-| `context`          | `any`                                   | External context object   |
-| `showSubmit`       | `boolean`                               | Show submit button        |
-| `buttonSettings`   | `SubmitProps`                           | Button configuration      |
-| `rowOverrides`     | `RowOverrides`                          | Custom row rendering      |
-| `rowChildren`      | `ReactNode`                             | Content after rows        |
-| `fieldTransformer` | `FieldTransformer`                      | Transform field configs   |
+| Prop               | Type                                    | Description                |
+| ------------------ | --------------------------------------- | -------------------------- |
+| `schema`           | `z.ZodObject`                           | Zod schema for validation  |
+| `fields`           | `FieldKit[]`                            | Field configurations       |
+| `initialValues`    | `Partial<z.infer<Z>>`                   | Initial form values        |
+| `onSubmit`         | `(values: z.infer<Z>) => Promise<void>` | Submit handler             |
+| `onCancel`         | `() => void`                            | Cancel handler             |
+| `onStateChange`    | `(state: FormState) => void`            | State change handler       |
+| `components`       | `Components`                            | Custom field components    |
+| `context`          | `any`                                   | External context object    |
+| `showSubmit`       | `boolean`                               | Show submit button         |
+| `buttonSettings`   | `SubmitProps`                           | Button configuration       |
+| `rowOverrides`     | `RowOverrides`                          | Custom row rendering       |
+| `rowChildren`      | `ReactNode`                             | Content after rows         |
+| `fieldTransformer` | `FieldTransformer`                      | Transform field configs    |
+| `scopeId`          | `string`                                | ID for FormaProvider       |
+| `ref`              | `Ref<FormHandle>`                       | Ref to access form methods |
 
 ### Field Props
 
@@ -665,6 +673,205 @@ See `examples.tsx` for comprehensive usage examples covering:
 - Row customization
 - Custom components
 - Complete real-world forms
+
+## Creating a Form Instance
+
+We recommend creating a single form instance with the default field components in a centralized location.
+
+### Recommended Setup
+
+Create a form instance in `lib/form.ts`:
+
+```tsx
+// lib/form.ts
+import { createForm } from "morphorm";
+import Input from "./components/ui/input";
+import Number from "./components/ui/number";
+import Checkbox from "./components/ui/checkbox";
+import TextArea from "./components/ui/textarea";
+import Select from "./components/ui/select";
+import Radio from "./components/ui/radio";
+
+const defaultFieldComponents = {
+	checkbox: Checkbox,
+	number: Number,
+	radio: Radio,
+	select: Select,
+	text: Input,
+	textarea: TextArea,
+};
+
+export const { Form } = createForm(fieldComponents);
+```
+
+> **Note:** The field component paths depend on your project structure. Adjust the imports to match your setup.
+
+### Usage
+
+```tsx
+import { Form } from "@/lib/form";
+
+function MyForm() {
+	return (
+		<Form
+			schema={mySchema}
+			onSubmit={handleSubmit}
+			showSubmit
+		/>
+	);
+}
+```
+
+### Initial Field Components
+
+When creating a form instance, you provide the initial field components:
+
+| Type       | Component     | Description      |
+| ---------- | ------------- | ---------------- |
+| `text`     | `Input`       | Text input       |
+| `number`   | `Number`      | Number input     |
+| `checkbox` | `Checkbox`    | Boolean checkbox |
+| `textarea` | `TextArea`    | Multi-line text  |
+| `select`   | `Select`      | Dropdown select  |
+| `radio`    | `Radio`       | Radio buttons    |
+
+### Creating Custom Field Components
+
+Create your own field components using `useFieldContext` for state management:
+
+```tsx
+// components/credit-card-input.tsx
+import type { FieldComponentProps } from "morphorm";
+import { useFieldContext } from "morphorm";
+
+export const CreditCardInput = (props: FieldComponentProps) => {
+	const field = useFieldContext<string>();
+
+	return (
+		<input
+			type="text"
+			placeholder="1234 5678 9012 3456"
+			className="credit-card-input"
+			{...props}
+			name={field.name}
+			value={field.state.value}
+			onChange={(e) => field.handleChange(e.target.value)}
+			onBlur={field.handleBlur}
+		/>
+	);
+};
+```
+
+Use `useFieldContext` to access:
+
+- `field.name` - Field name
+- `field.state.value` - Current field value
+- `field.handleChange(value)` - Update field value
+- `field.handleBlur()` - Mark field as touched
+- `field.state.error` - Validation error
+- `field.state.isValidating` - Validation status
+
+### Overriding Components Per-Form
+
+If you need custom components for specific forms, use the `components` prop to override or extend the initial components:
+
+```tsx
+import { Form } from "@/lib/form";
+import { CustomInput } from "./components/custom-input";
+import { CreditCardInput } from "./components/credit-card";
+
+function CheckoutForm() {
+	return (
+		<Form
+			schema={checkoutSchema}
+			components={{
+				text: CustomInput,
+				creditCard: CreditCardInput,
+			}}
+			onSubmit={handleSubmit}
+			showSubmit
+		/>
+	);
+}
+```
+
+The `components` prop allows you to:
+
+- **Override** existing types (e.g., replace `text` with your custom input)
+- **Extend** with new types (e.g., add `creditCard` type)
+
+The `createForm` function returns:
+
+| Export | Description        |
+| ------ | ------------------ |
+| `Form` | The form component |
+
+### FormaProvider Integration
+
+When using multiple forms, you can integrate them with `FormaProvider` for centralized form management:
+
+```tsx
+import { Provider, useForms } from "morphorm";
+
+function App() {
+	return (
+		<Provider>
+			<Dashboard />
+		</Provider>
+	);
+}
+
+function Dashboard() {
+	const { getForm, forms } = useForms();
+
+	return (
+		<div>
+			<UserForm scopeId="user" />
+			<SettingsForm scopeId="settings" />
+			<button onClick={() => getForm("user")?.reset()}>Reset User Form</button>
+		</div>
+	);
+}
+```
+
+### Accessing Form Methods
+
+Use `ref` to access form instance methods:
+
+```tsx
+import { useRef } from "react";
+
+function MyForm() {
+	const formRef = useRef();
+
+	return (
+		<>
+			<MyFormComponent ref={formRef} />
+			<button onClick={() => formRef.current?.reset()}>Reset</button>
+			<button onClick={() => formRef.current?.validate()}>Validate</button>
+		</>
+	);
+}
+```
+
+### Component Type Requirements
+
+When creating custom field components, ensure they accept the base props:
+
+```tsx
+import type { FieldComponentProps } from "morphorm";
+
+const CustomInput = (props: FieldComponentProps) => {
+	return (
+		<input
+			{...props}
+			className="custom-input"
+		/>
+	);
+};
+```
+
+See [Custom Components](#custom-components) section for detailed examples of custom component implementation.
 
 ## License
 
