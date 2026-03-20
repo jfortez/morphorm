@@ -1,5 +1,12 @@
 # Morphorm
 
+## 0.2.7
+
+### Patch Changes
+
+- 83d2919: docs: improve createForm documentation with examples
+- 255e637: add `createForm` to create a form instance with initial components
+
 ## 0.2.6
 
 ### Patch Changes
