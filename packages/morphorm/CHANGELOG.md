@@ -1,5 +1,11 @@
 # Morphorm
 
+## 0.2.8
+
+### Patch Changes
+
+- 996ac04: export function that infer types with initial components
+
 ## 0.2.7
 
 ### Patch Changes
