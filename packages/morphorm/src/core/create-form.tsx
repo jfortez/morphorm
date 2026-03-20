@@ -4,7 +4,7 @@ import type { z } from "zod";
 import * as React from "react";
 import { useRef, useMemo, useImperativeHandle, useContext, useLayoutEffect } from "react";
 
-import type { ContextType, RowOverrides, UseAppFormType } from "../types";
+import type { ContextType, FormField, RowOverrides, UseAppFormType } from "../types";
 import type { FieldComponents, FieldsConfig, FormSubmitHandler } from "../types";
 
 import { Form as PrimitiveForm } from "@/components/ui/form";
@@ -19,15 +19,9 @@ import Render from "@/components/render";
 
 import "../components/styles.css";
 
-export interface FormState {
-	canSubmit: boolean;
-	isSubmitted: boolean;
-	isSubmitting: boolean;
-}
-
 export interface FormProps<
-	Z extends z.ZodObject<any>,
-	C extends FieldComponents,
+	Z extends z.ZodObject<any> = z.ZodObject<any>,
+	C extends FieldComponents = Record<never, never>,
 	Context extends ContextType = ContextType,
 > {
 	schema: Z;
@@ -39,19 +33,40 @@ export interface FormProps<
 	context?: Context;
 	showSubmit?: boolean;
 	children?: React.ReactNode;
-	buttonSettings?: Omit<FormaSubmitProps, "onCancel">;
+	buttonSettings?: Omit<FormaSubmitProps, "onCancel" | "onSubmit">;
 	rowOverrides?: RowOverrides<Z, C>;
 	rowChildren?: React.ReactNode;
 	scopeId?: string;
 	ref?: React.Ref<ReturnType<UseAppFormType>>;
 }
 
-export const createFormComponent = <InitComponents extends Readonly<FieldComponents>>(
+export const createFormComponent = <InitComponents extends FieldComponents>(
 	useAppForm: UseAppFormType,
 ) => {
+	const $field = <
+		Z extends z.ZodObject<any> = z.ZodObject<any>,
+		C extends FieldComponents = Record<never, never>,
+		Context extends ContextType = ContextType,
+	>() => {
+		return undefined as unknown as FormField<Z, InitComponents & C, Context>;
+	};
+
+	function defineFields<
+		Z extends z.ZodObject<any> = z.ZodObject<any>,
+		C extends FieldComponents = Record<never, never>,
+		Context extends ContextType = ContextType,
+		Field extends FormField<Z, InitComponents & C, Context> = FormField<
+			Z,
+			InitComponents & C,
+			Context
+		>,
+	>(config: { schema?: Z; fields: Field[]; context?: Context }) {
+		return config.fields;
+	}
+
 	const Form = <
 		Z extends z.ZodObject<any> = z.ZodObject<any>,
-		C extends FieldComponents = FieldComponents,
+		C extends FieldComponents = Record<never, never>,
 		Context extends ContextType = ContextType,
 	>(
 		props: FormProps<Z, InitComponents & C, Context>,
@@ -143,5 +158,5 @@ export const createFormComponent = <InitComponents extends Readonly<FieldCompone
 
 	Form.displayName = "Morphorm";
 
-	return Form;
+	return { Form, $field, defineFields };
 };

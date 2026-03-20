@@ -85,7 +85,7 @@ interface _SharedFieldProps {
 	disabled?: boolean;
 }
 
-export type FieldType<C extends FieldComponents = FieldComponents> = keyof C;
+export type FieldType<C extends FieldComponents = Record<never, never>> = keyof C;
 
 type ValueOrFunctionProps<P, Args> = {
 	[K in keyof P]: ValueOrFunction<P[K], Args>;
@@ -101,7 +101,7 @@ type ExtractFieldProps<T, Args> =
 		: never;
 
 type FormFieldMap<
-	C extends FieldComponents = FieldComponents,
+	C extends FieldComponents = Record<never, never>,
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
 	Context extends ContextType = ContextType,
 > = {
@@ -123,7 +123,7 @@ type FormFieldMap<
 };
 
 export type FormFieldType<
-	C extends FieldComponents = NonNullable<unknown>,
+	C extends FieldComponents = FieldComponents,
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
 	Context extends ContextType = ContextType,
 > = FormFieldMap<C, Z, Context>[FieldType<C>];
@@ -158,7 +158,7 @@ export interface BaseField<
 
 export type FormaFieldBase<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
-	C extends FieldComponents = NonNullable<unknown>,
+	C extends FieldComponents = Record<never, never>,
 	Context extends ContextType = ContextType,
 	Name extends FieldName<Z> = FieldName<Z>,
 	Watch extends FieldWatch<Z, Name> = FieldWatch<Z, Name>,
@@ -175,7 +175,7 @@ export type FormaFieldBase<
 
 export type FormField<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
-	C extends FieldComponents = NonNullable<unknown>,
+	C extends FieldComponents = Record<never, never>,
 	Context extends ContextType = ContextType,
 > =
 	| {
@@ -189,7 +189,7 @@ export type FormSubmitHandler<Z extends z.ZodObject<any>> = (
 	values: z.infer<Z>,
 ) => MaybePromise<void>;
 
-export interface AutoField<C extends FieldComponents = NonNullable<unknown>> {
+export interface AutoField<C extends FieldComponents = FieldComponents> {
 	name: FieldName<z.ZodObject<any>>;
 	type: FieldType<C>;
 	label?: string;
@@ -199,7 +199,7 @@ export interface AutoField<C extends FieldComponents = NonNullable<unknown>> {
 
 export type TransformedField<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
-	C extends FieldComponents = NonNullable<unknown>,
+	C extends FieldComponents = FieldComponents,
 	Context extends ContextType = ContextType,
 > = AutoField<C> &
 	Partial<
@@ -212,13 +212,13 @@ export type TransformedField<
 
 export type FieldTransformFunction<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
-	C extends FieldComponents = NonNullable<unknown>,
+	C extends FieldComponents = FieldComponents,
 	Context extends ContextType = ContextType,
 > = (fields: AutoField<C>[]) => TransformedField<Z, C, Context>[];
 
 export interface FieldObjectConfig<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
-	C extends FieldComponents = NonNullable<unknown>,
+	C extends FieldComponents = FieldComponents,
 	Context extends ContextType = ContextType,
 	Name extends FieldName<Z> = FieldName<Z>,
 	Watch extends FieldWatch<Z, Name> = FieldWatch<Z, Name>,
@@ -236,7 +236,7 @@ export interface FieldObjectConfig<
 
 export type FieldTransformValue<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
-	C extends FieldComponents = NonNullable<unknown>,
+	C extends FieldComponents = FieldComponents,
 	Context extends ContextType = ContextType,
 	Name extends FieldName<Z> = FieldName<Z>,
 > =
@@ -245,7 +245,7 @@ export type FieldTransformValue<
 
 export type FieldTransformObject<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
-	C extends FieldComponents = NonNullable<unknown>,
+	C extends FieldComponents = FieldComponents,
 	Context extends ContextType = ContextType,
 > = Partial<{
 	[K in FieldName<Z>]:
@@ -255,12 +255,12 @@ export type FieldTransformObject<
 
 export type FieldTransformer<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
-	C extends FieldComponents = NonNullable<unknown>,
+	C extends FieldComponents = FieldComponents,
 > = FieldTransformObject<Z, C> | FieldTransformFunction<Z, C>;
 
 export type FieldsConfig<
 	Z extends z.ZodObject<any> = z.ZodObject<any>,
-	C extends FieldComponents = NonNullable<unknown>,
+	C extends FieldComponents = Record<never, never>,
 	Context extends ContextType = ContextType,
 > =
 	| FormField<Z, C, Context>[]

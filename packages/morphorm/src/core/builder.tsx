@@ -13,9 +13,5 @@ export const createForm = <C extends FieldComponents>(fieldComponents: C) => {
 		formContext,
 	});
 
-	const Form = createFormComponent<C>(useAppForm as any);
-
-	return {
-		Form,
-	};
+	return createFormComponent<C>(useAppForm as any);
 };

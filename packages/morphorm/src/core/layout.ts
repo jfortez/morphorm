@@ -315,10 +315,3 @@ export function parseFields<
 
 	return defaultFields;
 }
-
-export function defineFields<
-	Z extends z.ZodObject<any>,
-	Context extends ContextType = ContextType,
->(config: { schema: Z; fields: FieldsConfig<Z, {}, Context>; context?: Context }) {
-	return config.fields;
-}
