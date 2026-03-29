@@ -7,8 +7,8 @@ export const InputField = ({ ...props }: FieldComponentProps) => {
 	return (
 		<input
 			type="text"
-			className="forma-input"
 			{...props}
+			className="forma-input"
 			name={field.name}
 			data-testid={`input-${field.name}`}
 			value={field.state.value}

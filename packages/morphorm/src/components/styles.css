@@ -288,6 +288,9 @@
 	font-size: 0.75rem;
 	color: var(--forma-destructive);
 }
+.forma-field--error .forma-field__label {
+	color: var(--forma-destructive);
+}
 
 .forma-field--error .forma-input,
 .forma-field--error .forma-textarea,
