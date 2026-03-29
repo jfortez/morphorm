@@ -12,21 +12,29 @@ const formSchema = z.object({
 });
 
 const schema = z.object({
-	name: z.string(),
-	age: z.number(),
-	tasks: z.array(
-		z.object({
-			title: z.string(),
-			notes: z.string().optional(),
-			priority: z.string().optional(),
-		}),
-	),
+	name: z
+		.string({ error: "Name is Required" })
+		.min(1, "Name requires at least 1 character")
+		.default(""),
+	age: z.number({ error: "Age is Required" }).min(1, "Age Should be more than 0").default(0),
+	tasks: z
+		.array(
+			z.object({
+				title: z.string().min(1, "Title is required").default(""),
+				notes: z.string().optional().default(""),
+				priority: z.string().optional().default(""),
+			}),
+		)
+		.min(1, "At least 1 task is required"),
 });
 
 export const FormWithArray = () => (
 	<Form
 		schema={schema}
 		context={{ userRole: "admin" }}
+		onSubmit={(e) => {
+			console.log(e);
+		}}
 		fields={[
 			{
 				name: "name",
