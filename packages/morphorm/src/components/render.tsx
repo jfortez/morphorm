@@ -238,6 +238,7 @@ const Render = memo(({ nodes, rowOverrides, rowChildren }: RenderProps) => {
 								>
 									{node.kind === "scalar" && <ContextAwareField field={node.field} />}
 									{node.kind === "array" && (
+										// TODO: add validation for array nodes
 										<ArrayField
 											arrayField={node.field}
 											itemTemplate={node.itemTemplate}
