@@ -726,14 +726,14 @@ function MyForm() {
 
 When creating a form instance, you provide the initial field components:
 
-| Type       | Component     | Description      |
-| ---------- | ------------- | ---------------- |
-| `text`     | `Input`       | Text input       |
-| `number`   | `Number`      | Number input     |
-| `checkbox` | `Checkbox`    | Boolean checkbox |
-| `textarea` | `TextArea`    | Multi-line text  |
-| `select`   | `Select`      | Dropdown select  |
-| `radio`    | `Radio`       | Radio buttons    |
+| Type       | Component  | Description      |
+| ---------- | ---------- | ---------------- |
+| `text`     | `Input`    | Text input       |
+| `number`   | `Number`   | Number input     |
+| `checkbox` | `Checkbox` | Boolean checkbox |
+| `textarea` | `TextArea` | Multi-line text  |
+| `select`   | `Select`   | Dropdown select  |
+| `radio`    | `Radio`    | Radio buttons    |
 
 ### Creating Custom Field Components
 

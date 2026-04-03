@@ -37,16 +37,16 @@ export interface ParsedSchema<AdditionalRenderable = null, FieldTypes = string> 
 	fields: ParsedField<AdditionalRenderable, FieldTypes>[];
 }
 
-export type SuccessfulSchemaValidation = {
+export interface SuccessfulSchemaValidation {
 	success: true;
 	data: any;
-};
-export type SchemaValidationError = {
+}
+export interface SchemaValidationError {
 	path: (string | number)[];
 	message: string;
-};
-export type ErrorSchemaValidation = {
+}
+export interface ErrorSchemaValidation {
 	success: false;
 	errors: SchemaValidationError[];
-};
+}
 export type SchemaValidation = SuccessfulSchemaValidation | ErrorSchemaValidation;
