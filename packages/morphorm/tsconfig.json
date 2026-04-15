@@ -33,6 +33,6 @@
 			"@/*": ["src/*"]
 		}
 	},
-	"include": ["src/**/*", "jest-dom.d.ts"],
+	"include": ["src/**/*", "jest-dom.d.ts", "env.d.ts"],
 	"exclude": ["node_modules"]
 }
