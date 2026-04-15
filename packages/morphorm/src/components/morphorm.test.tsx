@@ -1751,6 +1751,97 @@ describe("Morphorm", () => {
 		});
 	});
 
+	describe("Validation", () => {
+		it("shows validation error when pressing Enter with empty required field", async () => {
+			const schema = z.object({
+				name: z.string().min(1, "Name is required"),
+			});
+
+			const user = userEvent.setup();
+
+			render(
+				<Form
+					schema={schema}
+					onSubmit={mockSubmit}
+					showSubmit
+				/>,
+			);
+
+			const nameInput = screen.getByTestId("input-name");
+			await user.click(nameInput);
+			await user.keyboard("{Enter}");
+
+			await waitFor(() => {
+				expect(screen.getByText(/name is required/i)).toBeInTheDocument();
+			});
+			expect(mockSubmit).not.toHaveBeenCalled();
+		});
+
+		it("shows validation error when clicking Submit button with empty required field", async () => {
+			const schema = z.object({
+				name: z.string().min(1, "Name is required"),
+				email: z.string().email("Invalid email format"),
+			});
+
+			const user = userEvent.setup();
+
+			render(
+				<Form
+					schema={schema}
+					onSubmit={mockSubmit}
+					showSubmit
+				/>,
+			);
+
+			const submitButton = screen.getByRole("button", { name: /submit/i });
+			await user.click(submitButton);
+
+			await waitFor(() => {
+				expect(screen.getByText(/name is required/i)).toBeInTheDocument();
+			});
+			await waitFor(() => {
+				expect(screen.getByText(/invalid email format/i)).toBeInTheDocument();
+			});
+			expect(mockSubmit).not.toHaveBeenCalled();
+		});
+	});
+
+	describe("Default Values", () => {
+		it("uses default values from z.string().default(), z.number().default(), and z.boolean().default()", async () => {
+			const schema = z.object({
+				name: z.string().default("John"),
+				age: z.number().default(25),
+				active: z.boolean().default(true),
+				role: z.enum(["admin", "user"]).default("user"),
+			});
+
+			const user = userEvent.setup();
+
+			render(
+				<Form
+					schema={schema}
+					onSubmit={mockSubmit}
+					showSubmit
+				/>,
+			);
+
+			const nameInput = screen.getByTestId("input-name") as HTMLInputElement;
+			expect(nameInput.value).toBe("John");
+
+			const submitButton = screen.getByRole("button", { name: /submit/i });
+			await user.click(submitButton);
+
+			await waitFor(() => {
+				expect(mockSubmit).toHaveBeenCalledWith({
+					name: "John",
+					age: 25,
+					active: true,
+					role: "user",
+				});
+			});
+		});
+	});
+
 	describe("Array Fields", () => {
 		it("renders array field with only schema", () => {
 			const schema = z.object({

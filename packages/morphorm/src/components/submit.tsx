@@ -60,7 +60,7 @@ export const FormSubmit = ({
 			>
 				{({ canSubmit, isSubmitting }) => (
 					<Button
-						type="button"
+						type="submit"
 						disabled={!canSubmit}
 					>
 						{getSubmitText(isSubmitting)}
