@@ -357,7 +357,7 @@ function ContextSection() {
 							label: "Admin Field",
 							type: "text",
 							size: 12,
-							disabled: ({ context }) => !context.isAdmin,
+							disabled: ({ context }) => !context?.isAdmin,
 						},
 					]}
 				/>
