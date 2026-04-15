@@ -11,6 +11,20 @@ export function getDefaultValueInZodStack(schema: z.ZodTypeAny): any {
 		return getDefaultValueInZodStack(schema.innerType());
 	}
 
+	return getTypeBasedDefault(schema);
+}
+
+function getTypeBasedDefault(schema: z.ZodTypeAny): any {
+	if (schema instanceof z.ZodString) {
+		return "";
+	}
+	if (schema instanceof z.ZodNumber) {
+		return 0;
+	}
+	if (schema instanceof z.ZodBoolean) {
+		return false;
+	}
+
 	return undefined;
 }
 
@@ -21,10 +35,7 @@ export function getDefaultValues(schema: ZodObjectOrWrapped): Record<string, any
 	const defaultValues: Record<string, any> = {};
 
 	for (const [key, field] of Object.entries(shape)) {
-		const defaultValue = getDefaultValueInZodStack(field as z.ZodTypeAny);
-		if (defaultValue !== undefined) {
-			defaultValues[key] = defaultValue;
-		}
+		defaultValues[key] = getDefaultValueInZodStack(field as z.ZodTypeAny);
 	}
 
 	return defaultValues;

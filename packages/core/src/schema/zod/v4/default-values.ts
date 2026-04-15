@@ -7,6 +7,22 @@ export function getDefaultValueInZodStack(schema: z.$ZodType): any {
 	if ("innerType" in schema._zod.def) {
 		return getDefaultValueInZodStack(schema._zod.def.innerType as z.$ZodType);
 	}
+	return getTypeBasedDefault(schema);
+}
+
+function getTypeBasedDefault(schema: z.$ZodType): any {
+	const type = schema._zod.def.type as string;
+
+	if (type === "string") {
+		return "";
+	}
+	if (type === "number" || type === "int") {
+		return 0;
+	}
+	if (type === "boolean") {
+		return false;
+	}
+
 	return undefined;
 }
 
@@ -16,10 +32,7 @@ export function getDefaultValues(schema: z.$ZodObject): Record<string, any> {
 	const defaultValues: Record<string, any> = {};
 
 	for (const [key, field] of Object.entries(shape)) {
-		const defaultValue = getDefaultValueInZodStack(field);
-		if (defaultValue !== undefined) {
-			defaultValues[key] = defaultValue;
-		}
+		defaultValues[key] = getDefaultValueInZodStack(field);
 	}
 
 	return defaultValues;
