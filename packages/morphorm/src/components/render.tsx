@@ -2,7 +2,7 @@
 import type { z } from "zod";
 
 import * as React from "react";
-import { memo, useMemo } from "react";
+import { memo, useMemo, useCallback } from "react";
 import { useStore } from "@tanstack/react-form";
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
@@ -173,18 +173,15 @@ const ArrayFieldError = memo(function ArrayFieldError({
 					</div>
 				) : (
 					<div className="formaArrayItems">
-						{items.map((_, idx) => {
-							const parsedFields = buildArrayItemFields(arrayField.name, idx, itemTemplate);
-							const handleRemoveItem = () => field.removeValue(idx);
-
-							return (
-								<ArrayFieldItem
-									key={idx}
-									onRemove={handleRemoveItem}
-									fields={parsedFields}
-								/>
-							);
-						})}
+						{items.map((_, idx) => (
+							<ArrayFieldItem
+								key={idx}
+								onRemove={field.removeValue}
+								idx={idx}
+								arrayFieldName={arrayField.name}
+								itemTemplate={itemTemplate}
+							/>
+						))}
 					</div>
 				)}
 			</CollapsibleContent>
@@ -193,15 +190,24 @@ const ArrayFieldError = memo(function ArrayFieldError({
 });
 
 interface ArrayFieldItemProps {
-	fields: ResolvedFieldConfig[];
-	onRemove: () => void;
+	onRemove: (index: number) => void;
+	idx: number;
+	arrayFieldName: string;
+	itemTemplate: ResolvedFieldConfig[];
 }
 
-const ArrayFieldItem = memo(({ fields, onRemove }: ArrayFieldItemProps) => {
+const ArrayFieldItem = memo(({ onRemove, idx, arrayFieldName, itemTemplate }: ArrayFieldItemProps) => {
+	const fields = useMemo(
+		() => buildArrayItemFields(arrayFieldName, idx, itemTemplate),
+		[idx, arrayFieldName, itemTemplate],
+	);
+
 	const nodes = useMemo<FormNode[]>(
 		() => fields.map((field) => ({ kind: "scalar", field })),
 		[fields],
 	);
+
+	const handleRemove = useCallback(() => onRemove(idx), [onRemove, idx]);
 
 	return (
 		<div className="formaArrayItem">
@@ -210,7 +216,7 @@ const ArrayFieldItem = memo(({ fields, onRemove }: ArrayFieldItemProps) => {
 				className="formaArrayItemAction"
 				variant="destructive"
 				size="icon-sm"
-				onClick={onRemove}
+				onClick={handleRemove}
 			>
 				<TrashIcon className="formaIconSmall" />
 			</Button>
@@ -230,7 +236,7 @@ const ContextAwareField = ({ field }: ContextAwareFieldProps) => {
 		if (!hasWatchContext) {
 			return undefined;
 		}
-		return field.watchContext!.reduce((acc, key) => ({ ...acc, [key]: context?.[key] }), {} as any);
+		return (field.watchContext ?? []).reduce((acc, key) => ({ ...acc, [key]: context?.[key] }), {} as any);
 	}, [context, hasWatchContext, field.watchContext]);
 
 	if (hasWatch) {
