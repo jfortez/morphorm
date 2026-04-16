@@ -11,6 +11,10 @@ export function getDefaultValueInZodStack(schema: z.ZodTypeAny): any {
 		return getDefaultValueInZodStack(schema.innerType());
 	}
 
+	if (schema instanceof z.ZodArray) {
+		return [];
+	}
+
 	return getTypeBasedDefault(schema);
 }
 

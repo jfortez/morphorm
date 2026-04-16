@@ -3,6 +3,7 @@ import type { z } from "zod";
 
 import * as React from "react";
 import { memo, useMemo } from "react";
+import { useStore } from "@tanstack/react-form";
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
 
@@ -82,62 +83,111 @@ const ArrayField = memo(({ arrayField, itemTemplate }: ArrayFieldProps) => {
 					name={arrayField.name}
 					mode="array"
 				>
-					{(field) => {
-						const items = (field.state.value as unknown[]) || [];
-
-						return (
-							<div className="formaArrayBody">
-								<div className="formaArrayHeader">
-									<CollapsibleTrigger>
-										<Label>{getLabelString(arrayField.label)}</Label>
-									</CollapsibleTrigger>
-									<Button
-										type="button"
-										data-testid={`add-${arrayField.name}`}
-										onClick={() => field.pushValue(defaultValues as never)}
-										size="sm"
-									>
-										<PlusIcon />
-										Add {getLabelString(arrayField.label)}
-									</Button>
-								</div>
-
-								<CollapsibleContent className="formaArrayContent">
-									{items.length === 0 ? (
-										<div className="formaArrayEmpty">
-											<div>
-												<h3 className="formaArrayEmptyTitle">No items</h3>
-												<span className="formaArrayEmptyDescription">
-													Click the + button to get started
-												</span>
-											</div>
-										</div>
-									) : (
-										<div className="formaArrayItems">
-											{items.map((_, idx) => {
-												const parsedFields = buildArrayItemFields(
-													arrayField.name,
-													idx,
-													itemTemplate,
-												);
-												const handleRemoveItem = () => field.removeValue(idx);
-
-												return (
-													<ArrayFieldItem
-														key={idx}
-														onRemove={handleRemoveItem}
-														fields={parsedFields}
-													/>
-												);
-											})}
-										</div>
-									)}
-								</CollapsibleContent>
-							</div>
-						);
-					}}
+					{(field) => (
+						<ArrayFieldError
+							field={field}
+							arrayField={arrayField}
+							itemTemplate={itemTemplate}
+							defaultValues={defaultValues}
+						/>
+					)}
 				</form.AppField>
 			</Collapsible>
+		</div>
+	);
+});
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ArrayFieldApi = any;
+
+interface ArrayFieldErrorProps {
+	field: ArrayFieldApi;
+	arrayField: ResolvedFieldConfig;
+	itemTemplate: ResolvedFieldConfig[];
+	defaultValues: Record<string, unknown>;
+}
+
+const ArrayFieldError = memo(function ArrayFieldError({
+	field,
+	arrayField,
+	itemTemplate,
+	defaultValues,
+}: ArrayFieldErrorProps) {
+	const errors = useStore(field.store as any, (state: any) => state.meta.errors);
+	const isTouched = useStore(field.store as any, (state: any) => state.meta.isTouched);
+	const submissionAttempts = useStore(
+		field.form.store as any,
+		(state: any) => state.submissionAttempts,
+	);
+	const showError = isTouched || submissionAttempts > 0;
+
+	const items = (field.state.value as unknown[]) || [];
+
+	const errorMessage = React.useMemo(() => {
+		if (!showError || errors.length === 0) {
+			return null;
+		}
+		const error = errors[0];
+		if (typeof error === "string") {
+			return error;
+		}
+		if (typeof error === "object" && error !== null && "message" in error) {
+			return (error as { message: string }).message;
+		}
+		return null;
+	}, [showError, errors]);
+
+	return (
+		<div className="formaArrayBody">
+			<div className="formaArrayHeader">
+				<CollapsibleTrigger>
+					<Label>{getLabelString(arrayField.label)}</Label>
+				</CollapsibleTrigger>
+				<Button
+					type="button"
+					data-testid={`add-${arrayField.name}`}
+					onClick={() => field.pushValue(defaultValues as never)}
+					size="sm"
+				>
+					<PlusIcon />
+					Add {getLabelString(arrayField.label)}
+				</Button>
+			</div>
+
+			{errorMessage && (
+				<div
+					className="forma-field__error"
+					data-slot="form-message"
+				>
+					{errorMessage}
+				</div>
+			)}
+
+			<CollapsibleContent className="formaArrayContent">
+				{items.length === 0 ? (
+					<div className="formaArrayEmpty">
+						<div>
+							<h3 className="formaArrayEmptyTitle">No items</h3>
+							<span className="formaArrayEmptyDescription">Click the + button to get started</span>
+						</div>
+					</div>
+				) : (
+					<div className="formaArrayItems">
+						{items.map((_, idx) => {
+							const parsedFields = buildArrayItemFields(arrayField.name, idx, itemTemplate);
+							const handleRemoveItem = () => field.removeValue(idx);
+
+							return (
+								<ArrayFieldItem
+									key={idx}
+									onRemove={handleRemoveItem}
+									fields={parsedFields}
+								/>
+							);
+						})}
+					</div>
+				)}
+			</CollapsibleContent>
 		</div>
 	);
 });
@@ -238,7 +288,6 @@ const Render = memo(({ nodes, rowOverrides, rowChildren }: RenderProps) => {
 								>
 									{node.kind === "scalar" && <ContextAwareField field={node.field} />}
 									{node.kind === "array" && (
-										// TODO: add validation for array nodes
 										<ArrayField
 											arrayField={node.field}
 											itemTemplate={node.itemTemplate}

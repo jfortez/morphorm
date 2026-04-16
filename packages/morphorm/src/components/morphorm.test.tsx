@@ -1865,6 +1865,79 @@ describe("Morphorm", () => {
 			expect(screen.getByText(/add/i)).toBeInTheDocument();
 		});
 
+		it("shows array validation error via submit button when array is empty", async () => {
+			const schema = z.object({
+				name: z.string(),
+				items: z
+					.array(
+						z.object({
+							value: z.string(),
+						}),
+					)
+					.min(1, "At least one item is required"),
+			});
+
+			const user = userEvent.setup();
+
+			render(
+				<Form
+					schema={schema}
+					fields={[
+						{ name: "name", type: "text" },
+						{ name: "items.value", type: "text", label: "Item Value" },
+					]}
+					onSubmit={mockSubmit}
+					showSubmit
+				/>,
+			);
+
+			expect(screen.getByText(/no items/i)).toBeInTheDocument();
+
+			const submitButton = screen.getByRole("button", { name: /submit/i });
+			await user.click(submitButton);
+
+			await waitFor(() => {
+				expect(screen.getByText(/at least one item is required/i)).toBeInTheDocument();
+			});
+			expect(mockSubmit).not.toHaveBeenCalled();
+		});
+
+		it("shows array validation error via Enter key when array is empty", async () => {
+			const schema = z.object({
+				name: z.string(),
+				items: z
+					.array(
+						z.object({
+							value: z.string(),
+						}),
+					)
+					.min(1, "At least one item is required"),
+			});
+
+			const user = userEvent.setup();
+
+			render(
+				<Form
+					schema={schema}
+					fields={[
+						{ name: "name", type: "text" },
+						{ name: "items.value", type: "text", label: "Item Value" },
+					]}
+					onSubmit={mockSubmit}
+					showSubmit
+				/>,
+			);
+
+			const nameInput = screen.getByTestId("input-name");
+			await user.click(nameInput);
+			await user.keyboard("{Enter}");
+
+			await waitFor(() => {
+				expect(screen.getByText(/at least one item is required/i)).toBeInTheDocument();
+			});
+			expect(mockSubmit).not.toHaveBeenCalled();
+		});
+
 		it("renders array field with initial values", () => {
 			const schema = z.object({
 				products: z.array(
@@ -3112,7 +3185,9 @@ describe("Morphorm", () => {
 							{ company: "", role: "", isCurrentRole: false, endDate: "" },
 						],
 					},
-					emergency: {},
+					emergency: {
+						contacts: [],
+					},
 				});
 			});
 		});

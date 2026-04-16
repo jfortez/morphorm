@@ -7,6 +7,9 @@ export function getDefaultValueInZodStack(schema: z.$ZodType): any {
 	if ("innerType" in schema._zod.def) {
 		return getDefaultValueInZodStack(schema._zod.def.innerType as z.$ZodType);
 	}
+	if (schema._zod.def.type === "array") {
+		return [];
+	}
 	return getTypeBasedDefault(schema);
 }
 
