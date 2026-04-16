@@ -2,7 +2,14 @@
 import type { z } from "zod";
 
 import * as React from "react";
-import { useRef, useMemo, useImperativeHandle, useContext, useLayoutEffect } from "react";
+import {
+	useRef,
+	useMemo,
+	useImperativeHandle,
+	useContext,
+	useLayoutEffect,
+	useCallback,
+} from "react";
 
 import type { ContextType, FormField, RowOverrides, UseAppFormType } from "../types";
 import type { FieldComponents, FieldsConfig, FormSubmitHandler } from "../types";
@@ -108,9 +115,12 @@ export const createFormComponent = <InitComponents extends FieldComponents>(
 
 		const form = useAppForm({
 			defaultValues,
-			onSubmit: async (submitValues) => {
-				await onSubmit?.(submitValues.value as z.input<any>);
-			},
+			onSubmit: useCallback(
+				async (submitValues: { value: unknown }) => {
+					await onSubmit?.(submitValues.value as z.input<any>);
+				},
+				[onSubmit],
+			),
 			validators: {
 				onSubmit: schema,
 			},
@@ -130,9 +140,9 @@ export const createFormComponent = <InitComponents extends FieldComponents>(
 
 		useImperativeHandle(ref, () => form as any);
 
-		const handleCancel = () => {
+		const handleCancel = useCallback(() => {
 			onCancel?.();
-		};
+		}, [onCancel]);
 
 		return (
 			<InternalProvider value={{ components, context }}>
