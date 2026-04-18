@@ -28,7 +28,6 @@
 
 		// Types for testing
 		"types": ["bun", "@testing-library/jest-dom"],
-		"baseUrl": ".",
 		"paths": {
 			"@/*": ["src/*"]
 		}

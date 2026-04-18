@@ -1,532 +1,521 @@
 "use client";
+import Link from "next/link";
 import { useState } from "react";
+import { motion } from "motion/react";
 import { Form } from "morphorm";
 import * as z from "zod";
-import type { FieldComponentProps } from "morphorm";
-import { useFieldContext } from "morphorm";
-import "morphorm/styles.css";
+import { GitHub } from "@/components/github-icon";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { Copy, Check } from "lucide-react";
+import { repo } from "../utils/info";
+import { CodeExample } from "../components/code-example";
 
-const basicSchema = z.object({
-	firstName: z.string().min(1, "First name is required"),
-	lastName: z.string().min(1, "Last name is required"),
+const demoSchema = z.object({
+	name: z.string().min(1, "Name required"),
 	email: z.string().email("Valid email required"),
-	age: z.number().min(18, "Must be 18+"),
+	notify: z.boolean(),
 });
 
-const arraySchema = z.object({
-	tasks: z
-		.array(
-			z.object({
-				title: z.string().min(1, "Title is required"),
-				completed: z.boolean(),
-			}),
-		)
-		.min(1, "At least 1 task required"),
-});
-
-const nestedSchema = z.object({
-	profile: z.object({
-		name: z.string().min(1, "Name required"),
-		email: z.string().email("Valid email required"),
-	}),
-	preferences: z.object({
-		theme: z.string(),
-		notifications: z.boolean(),
-	}),
-});
-
-const CustomInput = (props: FieldComponentProps) => {
-	const field = useFieldContext<string>();
-	return (
-		<input
-			{...props}
-			className="custom-input"
-			value={field.state.value}
-			onChange={(e) => field.handleChange(e.target.value)}
-			onBlur={field.handleBlur}
-		/>
-	);
+const stagger = {
+	hidden: {},
+	show: { transition: { staggerChildren: 0.07 } },
 };
 
-function SectionNav({
-	sections,
-	activeSection,
-	onSectionChange,
-}: {
-	sections: { id: string; label: string }[];
-	activeSection: string;
-	onSectionChange: (id: string) => void;
-}) {
+const slideUp = {
+	hidden: { opacity: 0, y: 20, filter: "blur(6px)" },
+	show: {
+		opacity: 1,
+		y: 0,
+		filter: "blur(0px)",
+		transition: { duration: 0.55, ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number] },
+	},
+};
+
+const fadeIn = {
+	hidden: { opacity: 0 },
+	show: { opacity: 1, transition: { duration: 0.6 } },
+};
+
+const PKG_MANAGERS = [
+	{ id: "bun", cmd: "bun add morphorm" },
+	{ id: "npm", cmd: "npm install morphorm" },
+	{ id: "pnpm", cmd: "pnpm add morphorm" },
+	{ id: "yarn", cmd: "yarn add morphorm" },
+] as const;
+
+function InstallCommand() {
+	const [active, setActive] = useState<"bun" | "npm" | "pnpm" | "yarn">("bun");
+	const [copied, setCopied] = useState(false);
+
+	const current = PKG_MANAGERS.find((p) => p.id === active)!;
+
+	const copy = () => {
+		navigator.clipboard.writeText(current.cmd);
+		setCopied(true);
+		setTimeout(() => setCopied(false), 1800);
+	};
+
 	return (
-		<nav className="flex flex-wrap gap-2 mb-12 p-1 bg-neutral-200/50 rounded-full">
-			{sections.map((section) => (
+		<div className="w-full max-w-md border border-border rounded-sm overflow-hidden">
+			<div className="flex border-b border-border">
+				{PKG_MANAGERS.map((p) => (
+					<button
+						key={p.id}
+						onClick={() => setActive(p.id)}
+						className={`px-3 py-2 font-mono text-xs transition-colors ${
+							active === p.id
+								? "text-foreground bg-muted"
+								: "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+						}`}
+					>
+						{p.id}
+					</button>
+				))}
+			</div>
+			<div className="flex items-center gap-3 px-4 py-3 bg-card">
+				<span className="text-muted-foreground font-mono text-sm select-none">$</span>
+				<span className="flex-1 font-mono text-sm text-foreground">{current.cmd}</span>
 				<button
-					key={section.id}
-					onClick={() => onSectionChange(section.id)}
-					className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-						activeSection === section.id
-							? "bg-neutral-900 text-white shadow-lg"
-							: "bg-transparent text-neutral-600 hover:bg-neutral-200 hover:text-neutral-900"
-					}`}
+					onClick={copy}
+					className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+					aria-label="Copy command"
 				>
-					{section.label}
+					{copied ? <Check className="size-4" /> : <Copy className="size-4" />}
 				</button>
-			))}
-		</nav>
-	);
-}
-
-function FormCard({ title, children, highlight = false }: { title: string; children: React.ReactNode; highlight?: boolean }) {
-	return (
-		<div className={`p-8 rounded-2xl border transition-all duration-200 ${
-			highlight
-				? "bg-white border-neutral-900 shadow-xl ring-2 ring-neutral-900/10"
-				: "bg-neutral-50 border-neutral-200 hover:border-neutral-300 hover:shadow-md"
-		}`}>
-			<h3 className="text-sm font-semibold text-neutral-500 uppercase tracking-wider mb-6">{title}</h3>
-			{children}
+			</div>
 		</div>
 	);
 }
 
-function SubmitResult({ result }: { result: string }) {
-	return (
-		<div className="mt-8 p-6 bg-neutral-900 text-white rounded-xl">
-			<h4 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">Submitted Values</h4>
-			<pre className="text-sm font-mono overflow-auto">{result}</pre>
-		</div>
-	);
-}
-
-function BasicFormsSection() {
-	const [submitResult, setSubmitResult] = useState<string>("");
-
-	const handleSubmit = (values: z.infer<typeof basicSchema>) => {
-		setSubmitResult(JSON.stringify(values, null, 2));
-	};
-
-	return (
-		<section className="space-y-10">
-			<div className="mb-8">
-				<h2 className="text-3xl font-bold text-neutral-900 tracking-tight">Basic Forms</h2>
-				<p className="text-neutral-500 mt-2">Forms with different field configuration modes</p>
-			</div>
-
-			<FormCard title="Array Config">
-				<Form
-					schema={basicSchema}
-					onSubmit={handleSubmit}
-					showSubmit
-					fields={[
-						{ name: "firstName", label: "First Name", type: "text", size: 6 },
-						{ name: "lastName", label: "Last Name", type: "text", size: 6 },
-						{ name: "email", label: "Email", type: "text", size: 12 },
-						{ name: "age", label: "Age", type: "number", size: 12 },
-					]}
+const features = [
+	{
+		tag: "schema-first",
+		title: "Zero boilerplate",
+		desc: "Define a Zod schema. Morphorm derives your fields, layout, and validation — automatically.",
+		icon: (
+			<svg
+				width="18"
+				height="18"
+				viewBox="0 0 15 15"
+				fill="none"
+			>
+				<path
+					d="M7.5 1L1 4v7l6.5 3L14 11V4L7.5 1z"
+					stroke="currentColor"
+					strokeWidth="1.2"
+					strokeLinejoin="round"
 				/>
-			</FormCard>
-
-			<FormCard title="Object Config">
-				<Form
-					schema={basicSchema}
-					onSubmit={handleSubmit}
-					showSubmit
-					fields={{
-						firstName: { size: 6, type: "text" },
-						lastName: { size: 6, type: "text" },
-						email: { size: 12, type: "text" },
-						age: { size: 12, type: "number" },
-					}}
+				<path
+					d="M1 4l6.5 3M7.5 7v7M14 4l-6.5 3"
+					stroke="currentColor"
+					strokeWidth="1.2"
 				/>
-			</FormCard>
-
-			<FormCard title="Function Config">
-				<Form
-					schema={basicSchema}
-					onSubmit={handleSubmit}
-					showSubmit
-					fields={(fields) =>
-						fields.map((f) => ({
-							...f,
-							size: 6,
-							type: "text" as const,
-						}))
-					}
+			</svg>
+		),
+	},
+	{
+		tag: "reactive",
+		title: "Watch system",
+		desc: "Fields subscribe to other fields. Labels, placeholders, disabled — all update live without wiring.",
+		icon: (
+			<svg
+				width="18"
+				height="18"
+				viewBox="0 0 15 15"
+				fill="none"
+			>
+				<circle
+					cx="3"
+					cy="7.5"
+					r="1.5"
+					stroke="currentColor"
+					strokeWidth="1.2"
 				/>
-			</FormCard>
-
-			{submitResult && <SubmitResult result={submitResult} />}
-		</section>
-	);
-}
-
-function ArrayFieldsSection() {
-	const [submitResult, setSubmitResult] = useState<string>("");
-
-	const handleSubmit = (values: z.infer<typeof arraySchema>) => {
-		setSubmitResult(JSON.stringify(values, null, 2));
-	};
-
-	return (
-		<section className="space-y-10">
-			<div className="mb-8">
-				<h2 className="text-3xl font-bold text-neutral-900 tracking-tight">Array Fields</h2>
-				<p className="text-neutral-500 mt-2">Dynamic lists with add and remove functionality</p>
-			</div>
-
-			<FormCard title="Dynamic Tasks">
-				<Form
-					schema={arraySchema}
-					onSubmit={handleSubmit}
-					showSubmit
-					fields={[
-						{ name: "tasks.title", label: "Task Title", type: "text", size: 6 },
-						{ name: "tasks.completed", label: "Done", type: "checkbox", size: 6 },
-					]}
+				<circle
+					cx="12"
+					cy="7.5"
+					r="1.5"
+					stroke="currentColor"
+					strokeWidth="1.2"
 				/>
-			</FormCard>
-
-			{submitResult && <SubmitResult result={submitResult} />}
-		</section>
-	);
-}
-
-function NestedFieldsSection() {
-	const [submitResult, setSubmitResult] = useState<string>("");
-
-	const handleSubmit = (values: any) => {
-		setSubmitResult(JSON.stringify(values, null, 2));
-	};
-
-	return (
-		<section className="space-y-10">
-			<div className="mb-8">
-				<h2 className="text-3xl font-bold text-neutral-900 tracking-tight">Nested Fields</h2>
-				<p className="text-neutral-500 mt-2">Object-based nested schema structures</p>
-			</div>
-
-			<FormCard title="Nested Objects">
-				<Form
-					schema={nestedSchema}
-					onSubmit={handleSubmit}
-					showSubmit
-					fields={[
-						{ name: "profile.name", label: "Profile Name", type: "text", size: 6 },
-						{ name: "profile.email", label: "Profile Email", type: "text", size: 6 },
-						{ name: "preferences.theme", label: "Theme", type: "text", size: 6 },
-						{ name: "preferences.notifications", label: "Notifications", type: "checkbox", size: 6 },
-					]}
+				<circle
+					cx="7.5"
+					cy="3"
+					r="1.5"
+					stroke="currentColor"
+					strokeWidth="1.2"
 				/>
-			</FormCard>
-
-			{submitResult && <SubmitResult result={submitResult} />}
-		</section>
-	);
-}
-
-function CustomComponentsSection() {
-	const [submitResult, setSubmitResult] = useState<string>("");
-
-	const handleSubmit = (values: any) => {
-		setSubmitResult(JSON.stringify(values, null, 2));
-	};
-
-	const schema = z.object({
-		customField: z.string().min(1, "Required"),
-	});
-
-	return (
-		<section className="space-y-10">
-			<div className="mb-8">
-				<h2 className="text-3xl font-bold text-neutral-900 tracking-tight">Custom Components</h2>
-				<p className="text-neutral-500 mt-2">Using your own field components</p>
-			</div>
-
-			<FormCard title="Custom Input">
-				<Form
-					schema={schema}
-					onSubmit={handleSubmit}
-					showSubmit
-					components={{ text: CustomInput }}
-					fields={[{ name: "customField", label: "Custom Field", type: "text" }]}
+				<path
+					d="M4.5 7.5h3M9 7.5h3M7.5 4.5v6"
+					stroke="currentColor"
+					strokeWidth="1.2"
 				/>
-			</FormCard>
-
-			{submitResult && <SubmitResult result={submitResult} />}
-		</section>
-	);
-}
-
-function WatchDependenciesSection() {
-	const [submitResult, setSubmitResult] = useState<string>("");
-
-	const handleSubmit = (values: any) => {
-		setSubmitResult(JSON.stringify(values, null, 2));
-	};
-
-	const watchSchema = z.object({
-		firstName: z.string(),
-		lastName: z.string(),
-		fullName: z.string(),
-		country: z.string(),
-		city: z.string(),
-		agreeTerms: z.boolean(),
-		submitName: z.string(),
-	});
-
-	return (
-		<section className="space-y-10">
-			<div className="mb-8">
-				<h2 className="text-3xl font-bold text-neutral-900 tracking-tight">Watch Dependencies</h2>
-				<p className="text-neutral-500 mt-2">Fields that react to changes in other fields</p>
-			</div>
-
-			<FormCard title="Computed Field">
-				<Form
-					schema={watchSchema}
-					onSubmit={handleSubmit}
-					showSubmit
-					fields={[
-						{ name: "firstName", label: "First Name", type: "text", size: 6 },
-						{ name: "lastName", label: "Last Name", type: "text", size: 6 },
-						{
-							name: "fullName",
-							label: "Full Name (Auto)",
-							type: "text",
-							size: 12,
-							watch: ["firstName", "lastName"],
-							disabled: ({ fieldValues }) => !fieldValues.firstName || !fieldValues.lastName,
-						},
-					]}
+			</svg>
+		),
+	},
+	{
+		tag: "composable",
+		title: "Bring your own",
+		desc: "Override any field with your own component. Full access to field state via useFieldContext.",
+		icon: (
+			<svg
+				width="18"
+				height="18"
+				viewBox="0 0 15 15"
+				fill="none"
+			>
+				<rect
+					x="1"
+					y="1"
+					width="5"
+					height="5"
+					rx="1"
+					stroke="currentColor"
+					strokeWidth="1.2"
 				/>
-			</FormCard>
-
-			<FormCard title="Conditional Field">
-				<Form
-					schema={watchSchema}
-					onSubmit={handleSubmit}
-					showSubmit
-					fields={[
-						{ name: "agreeTerms", label: "I agree to terms", type: "checkbox", size: 12 },
-						{
-							name: "submitName",
-							label: "Submit Button Label",
-							type: "text",
-							size: 12,
-							watch: ["agreeTerms"],
-							disabled: ({ fieldValues }) => !fieldValues.agreeTerms,
-						},
-					]}
+				<rect
+					x="9"
+					y="1"
+					width="5"
+					height="5"
+					rx="1"
+					stroke="currentColor"
+					strokeWidth="1.2"
 				/>
-			</FormCard>
-
-			{submitResult && <SubmitResult result={submitResult} />}
-		</section>
-	);
-}
-
-function ContextSection() {
-	const [submitResult, setSubmitResult] = useState<string>("");
-
-	const handleSubmit = (values: any) => {
-		setSubmitResult(JSON.stringify(values, null, 2));
-	};
-
-	const contextSchema = z.object({
-		adminField: z.string(),
-		userField: z.string(),
-		searchField: z.string(),
-	});
-
-	return (
-		<section className="space-y-10">
-			<div className="mb-8">
-				<h2 className="text-3xl font-bold text-neutral-900 tracking-tight">Context</h2>
-				<p className="text-neutral-500 mt-2">External context affecting field behavior</p>
-			</div>
-
-			<FormCard title="Context-based Disabled">
-				<Form
-					schema={contextSchema}
-					onSubmit={handleSubmit}
-					context={{ isAdmin: false }}
-					showSubmit
-					fields={[
-						{
-							name: "adminField",
-							label: "Admin Field",
-							type: "text",
-							size: 12,
-							disabled: ({ context }) => !context?.isAdmin,
-						},
-					]}
+				<rect
+					x="1"
+					y="9"
+					width="5"
+					height="5"
+					rx="1"
+					stroke="currentColor"
+					strokeWidth="1.2"
 				/>
-			</FormCard>
-
-			<FormCard title="Context in Labels">
-				<Form
-					schema={contextSchema}
-					onSubmit={handleSubmit}
-					context={{ userRole: "admin" }}
-					showSubmit
-					fields={[
-						{
-							name: "userField",
-							label: ({ context }) =>
-								context?.userRole === "admin" ? "Admin User Field" : "Regular User Field",
-							type: "text",
-							size: 12,
-						},
-					]}
+				<rect
+					x="9"
+					y="9"
+					width="5"
+					height="5"
+					rx="1"
+					stroke="currentColor"
+					strokeWidth="1.2"
 				/>
-			</FormCard>
-
-			{submitResult && <SubmitResult result={submitResult} />}
-		</section>
-	);
-}
-
-function SubmitBehaviorSection() {
-	const [submitResult, setSubmitResult] = useState<string>("");
-	const [cancelCount, setCancelCount] = useState<number>(0);
-
-	const handleSubmit = (values: any) => {
-		setSubmitResult(JSON.stringify(values, null, 2));
-	};
-
-	const handleCancel = () => {
-		setCancelCount((c) => c + 1);
-	};
-
-	const submitSchema = z.object({
-		name: z.string().min(1, "Name is required"),
-		email: z.string().email("Valid email required"),
-	});
-
-	return (
-		<section className="space-y-10">
-			<div className="mb-8">
-				<h2 className="text-3xl font-bold text-neutral-900 tracking-tight">Submit Behavior</h2>
-				<p className="text-neutral-500 mt-2">Testing form submission and validation</p>
-			</div>
-
-			<FormCard title="Enter Key Submit" highlight>
-				<p className="text-sm text-neutral-500 mb-6">Press Enter in any field to submit the form</p>
-				<Form
-					schema={submitSchema}
-					onSubmit={handleSubmit}
-					showSubmit
-					fields={[
-						{ name: "name", label: "Name", type: "text", size: 12 },
-						{ name: "email", label: "Email", type: "text", size: 12 },
-					]}
+			</svg>
+		),
+	},
+	{
+		tag: "grid layout",
+		title: "12-col grid",
+		desc: "Responsive 12-column grid built in. Each field has a size prop. Fill spacers break rows.",
+		icon: (
+			<svg
+				width="18"
+				height="18"
+				viewBox="0 0 15 15"
+				fill="none"
+			>
+				<path
+					d="M1 3h13M1 7.5h13M1 12h13M5 1v13M10 1v13"
+					stroke="currentColor"
+					strokeWidth="1.2"
+					strokeLinecap="round"
 				/>
-			</FormCard>
-
-			<FormCard title="Cancel Button">
-				<p className="text-sm text-neutral-500 mb-4">Cancel resets the form and increments counter</p>
-				<p className="text-2xl font-bold text-neutral-900 mb-6">{cancelCount}</p>
-				<Form
-					schema={submitSchema}
-					onSubmit={handleSubmit}
-					onCancel={handleCancel}
-					showSubmit
-					fields={[
-						{ name: "name", label: "Name", type: "text", size: 12 },
-						{ name: "email", label: "Email", type: "text", size: 12 },
-					]}
-				/>
-			</FormCard>
-
-			{submitResult && <SubmitResult result={submitResult} />}
-		</section>
-	);
-}
-
-function InitialValuesSection() {
-	const [submitResult, setSubmitResult] = useState<string>("");
-
-	const handleSubmit = (values: any) => {
-		setSubmitResult(JSON.stringify(values, null, 2));
-	};
-
-	const initialSchema = z.object({
-		name: z.string(),
-		age: z.number(),
-		active: z.boolean(),
-	});
-
-	return (
-		<section className="space-y-10">
-			<div className="mb-8">
-				<h2 className="text-3xl font-bold text-neutral-900 tracking-tight">Initial Values</h2>
-				<p className="text-neutral-500 mt-2">Pre-populated form fields</p>
-			</div>
-
-			<FormCard title="With Defaults">
-				<Form
-					schema={initialSchema}
-					onSubmit={handleSubmit}
-					showSubmit
-					initialValues={{
-						name: "John Doe",
-						age: 30,
-						active: true,
-					}}
-					fields={[
-						{ name: "name", label: "Name", type: "text", size: 12 },
-						{ name: "age", label: "Age", type: "number", size: 12 },
-						{ name: "active", label: "Active", type: "checkbox", size: 12 },
-					]}
-				/>
-			</FormCard>
-
-			{submitResult && <SubmitResult result={submitResult} />}
-		</section>
-	);
-}
+			</svg>
+		),
+	},
+];
 
 export default function Home() {
-	const [activeSection, setActiveSection] = useState<string>("basic");
-
-	const sections = [
-		{ id: "basic", label: "Basic" },
-		{ id: "arrays", label: "Arrays" },
-		{ id: "nested", label: "Nested" },
-		{ id: "custom", label: "Custom" },
-		{ id: "watch", label: "Watch" },
-		{ id: "context", label: "Context" },
-		{ id: "submit", label: "Submit" },
-		{ id: "initial", label: "Initial" },
-	];
-
 	return (
-		<div className="min-h-screen bg-neutral-100/50 py-16 px-6">
-			<div className="max-w-3xl mx-auto">
-				<header className="text-center mb-16">
-					<h1 className="text-5xl font-bold text-neutral-900 tracking-tight">Morphorm</h1>
-					<p className="text-neutral-500 mt-4 text-lg">Form library for React</p>
-				</header>
+		<div className="min-h-screen bg-background text-foreground selection:bg-foreground/20 font-(--font-geist-sans)">
+			<div
+				className="fixed inset-0 pointer-events-none z-0"
+				style={{
+					backgroundImage: "radial-gradient(circle, var(--dot-color) 1px, transparent 1px)",
+					backgroundSize: "28px 28px",
+				}}
+			/>
+			<div
+				className="fixed inset-0 pointer-events-none z-0"
+				style={{
+					background:
+						"radial-gradient(ellipse 90% 55% at 50% 0%, transparent 40%, var(--background) 100%)",
+				}}
+			/>
+			<div
+				className="fixed top-0 left-1/2 -translate-x-1/2 w-150 h-75 pointer-events-none z-0"
+				style={{
+					background: "radial-gradient(ellipse at top, var(--glow-start) 0%, transparent 70%)",
+				}}
+			/>
 
-				<SectionNav
-					sections={sections}
-					activeSection={activeSection}
-					onSectionChange={setActiveSection}
-				/>
+			<div className="relative z-10">
+				<nav className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-md">
+					<div className="max-w-5xl mx-auto px-8 h-12 flex items-center justify-between">
+						<Link
+							href="/"
+							className="font-mono text-xs tracking-widest uppercase text-muted-foreground hover:text-foreground transition-colors"
+						>
+							morphorm
+						</Link>
+						<div className="flex items-center gap-1">
+							<Link
+								href="/examples"
+								className="px-3 py-1.5 font-mono text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+							>
+								examples
+							</Link>
+							<a
+								href={repo}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+								aria-label="GitHub"
+							>
+								<GitHub className="w-4 h-4" />
+							</a>
+							<ThemeToggle />
+						</div>
+					</div>
+				</nav>
 
-				<main>
-					{activeSection === "basic" && <BasicFormsSection />}
-					{activeSection === "arrays" && <ArrayFieldsSection />}
-					{activeSection === "nested" && <NestedFieldsSection />}
-					{activeSection === "custom" && <CustomComponentsSection />}
-					{activeSection === "watch" && <WatchDependenciesSection />}
-					{activeSection === "context" && <ContextSection />}
-					{activeSection === "submit" && <SubmitBehaviorSection />}
-					{activeSection === "initial" && <InitialValuesSection />}
-				</main>
+				<section className="max-w-5xl mx-auto px-8 pt-32 pb-28">
+					<motion.div
+						variants={stagger}
+						initial="hidden"
+						animate="show"
+						className="flex flex-col items-start gap-7"
+					>
+						<motion.div
+							variants={slideUp}
+							className="flex items-center gap-3"
+						>
+							<span className="h-px w-6 bg-border" />
+							<span className="font-mono text-[10px] text-muted-foreground tracking-[0.2em] uppercase">
+								alpha · v0.1
+							</span>
+						</motion.div>
 
-				<footer className="mt-20 text-center text-sm text-neutral-400">
-					Built with Morphorm
+						<div className="relative inline-block overflow-hidden">
+							<h1 className="font-mono text-[clamp(4rem,12vw,8rem)] font-bold tracking-tight leading-none text-foreground">
+								{"morphorm".split("").map((char, i) => (
+									<motion.span
+										key={i}
+										className="inline-block"
+										initial={{ opacity: 0, y: 32, filter: "blur(10px)" }}
+										animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+										transition={{
+											duration: 0.6,
+											delay: 0.05 + i * 0.065,
+											ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number],
+										}}
+									>
+										{char}
+									</motion.span>
+								))}
+							</h1>
+						</div>
+
+						<motion.p
+							variants={slideUp}
+							className="text-muted-foreground text-xl leading-relaxed max-w-lg font-(--font-geist-sans)"
+						>
+							Type-safe, schema-driven forms for React.{" "}
+							<span className="text-muted-foreground/60">
+								Define once. Render everywhere. Zero boilerplate.
+							</span>
+						</motion.p>
+
+						<motion.div
+							variants={slideUp}
+							className="flex flex-col  items-start gap-4 pt-1 w-full"
+						>
+							<InstallCommand />
+							<div className="flex items-center gap-3">
+								<Link
+									href="/examples"
+									className="px-5 py-2.5 bg-primary text-primary-foreground text-sm font-mono font-medium hover:bg-primary/90 transition-colors whitespace-nowrap"
+								>
+									examples →
+								</Link>
+								<a
+									href={repo}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="px-5 py-2.5 border border-border text-muted-foreground text-sm font-mono hover:border-foreground/30 hover:text-foreground transition-colors whitespace-nowrap flex items-center gap-2"
+								>
+									<GitHub className="w-3.5 h-3.5" />
+									github
+								</a>
+							</div>
+						</motion.div>
+					</motion.div>
+				</section>
+
+				<div className="max-w-5xl mx-auto px-8">
+					<div className="h-px bg-linear-to-r from-transparent via-border to-transparent" />
+				</div>
+
+				<section className="max-w-5xl mx-auto px-8 py-28">
+					<motion.div
+						variants={stagger}
+						initial="hidden"
+						whileInView="show"
+						viewport={{ once: true, margin: "-80px" }}
+					>
+						<motion.div
+							variants={slideUp}
+							className="mb-12"
+						>
+							<span className="font-mono text-[10px] text-muted-foreground tracking-[0.2em] uppercase">
+								why morphorm
+							</span>
+						</motion.div>
+						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-border/40">
+							{features.map((f) => (
+								<motion.div
+									key={f.tag}
+									variants={slideUp}
+									className="bg-background p-7 flex flex-col gap-4 group hover:bg-muted/40 transition-colors"
+								>
+									<div className="text-muted-foreground group-hover:text-foreground/70 transition-colors">
+										{f.icon}
+									</div>
+									<div>
+										<span className="font-mono text-[9px] text-muted-foreground/50 tracking-[0.2em] uppercase block mb-2">
+											{f.tag}
+										</span>
+										<h3 className="text-foreground text-sm font-semibold mb-2">{f.title}</h3>
+										<p className="text-muted-foreground text-xs leading-relaxed">{f.desc}</p>
+									</div>
+								</motion.div>
+							))}
+						</div>
+					</motion.div>
+				</section>
+
+				<div className="max-w-5xl mx-auto px-8">
+					<div className="h-px bg-linear-to-r from-transparent via-border to-transparent" />
+				</div>
+
+				<section className="max-w-5xl mx-auto px-8 py-28">
+					<motion.div
+						initial="hidden"
+						whileInView="show"
+						viewport={{ once: true, margin: "-80px" }}
+						variants={stagger}
+					>
+						<motion.div
+							variants={slideUp}
+							className="mb-10 flex items-end justify-between"
+						>
+							<div>
+								<span className="font-mono text-[10px] text-muted-foreground tracking-[0.2em] uppercase block mb-2">
+									live demo
+								</span>
+								<h2 className="text-2xl font-semibold text-foreground tracking-tight">
+									Try it right now
+								</h2>
+							</div>
+							<Link
+								href="/examples"
+								className="font-mono text-xs text-muted-foreground hover:text-foreground transition-colors"
+							>
+								more examples →
+							</Link>
+						</motion.div>
+
+						<motion.div
+							variants={fadeIn}
+							className="border border-border bg-card/50 overflow-hidden"
+						>
+							<div className="flex items-center gap-2 px-5 py-3 bg-muted/60 border-b border-border">
+								<div className="flex gap-1.5">
+									<span className="w-2.5 h-2.5 rounded-full bg-border" />
+									<span className="w-2.5 h-2.5 rounded-full bg-border" />
+									<span className="w-2.5 h-2.5 rounded-full bg-border" />
+								</div>
+								<span className="ml-3 font-mono text-[11px] text-muted-foreground/50">
+									{"<Form schema={demoSchema} showSubmit />"}
+								</span>
+							</div>
+							<div className="p-8 max-w-lg mx-auto">
+								<Form
+									schema={demoSchema}
+									showSubmit
+									fields={[
+										{ name: "name", label: "Name", type: "text", size: 6 },
+										{ name: "email", label: "Email", type: "text", size: 6 },
+										{ name: "notify", label: "Send me updates", type: "checkbox", size: 12 },
+									]}
+									onSubmit={(v) => console.log(v)}
+								/>
+							</div>
+						</motion.div>
+					</motion.div>
+				</section>
+
+				<div className="max-w-5xl mx-auto px-8">
+					<div className="h-px bg-linear-to-r from-transparent via-border to-transparent" />
+				</div>
+
+				<section className="max-w-5xl mx-auto px-8 py-28">
+					<motion.div
+						initial={{ opacity: 0, y: 16 }}
+						whileInView={{ opacity: 1, y: 0 }}
+						viewport={{ once: true }}
+						transition={{ duration: 0.5 }}
+					>
+						<div className="mb-10">
+							<span className="font-mono text-[10px] text-muted-foreground tracking-[0.2em] uppercase block mb-2">
+								get started
+							</span>
+							<h2 className="text-2xl font-semibold text-foreground tracking-tight">
+								As simple as it looks
+							</h2>
+						</div>
+
+						<div className="border border-border overflow-hidden">
+							<div className="flex items-center justify-between px-5 py-3 bg-muted/60 border-b border-border">
+								<div className="flex items-center gap-3">
+									<div className="flex gap-1.5">
+										<span className="w-2.5 h-2.5 rounded-full bg-border" />
+										<span className="w-2.5 h-2.5 rounded-full bg-border" />
+										<span className="w-2.5 h-2.5 rounded-full bg-border" />
+									</div>
+									<span className="font-mono text-[11px] text-muted-foreground">form.tsx</span>
+								</div>
+								<span className="font-mono text-[10px] text-border tracking-widest">morphorm</span>
+							</div>
+							<div className="text-[13px] font-mono overflow-x-auto leading-6 bg-card">
+								<CodeExample />
+							</div>
+						</div>
+					</motion.div>
+				</section>
+
+				<footer className="border-t border-border/60 px-8 py-8 max-w-5xl mx-auto flex items-center justify-between">
+					<div className="flex items-center gap-4">
+						<span className="font-mono text-xs text-muted-foreground/30">morphorm</span>
+						<span className="font-mono text-xs text-muted-foreground/20">© 2025</span>
+					</div>
+					<div className="flex items-center gap-4">
+						<Link
+							href="/examples"
+							className="font-mono text-xs text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+						>
+							examples
+						</Link>
+						<a
+							href={repo}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-muted-foreground/30 hover:text-muted-foreground transition-colors"
+							aria-label="GitHub"
+						>
+							<GitHub className="w-3.5 h-3.5" />
+						</a>
+					</div>
 				</footer>
 			</div>
 		</div>

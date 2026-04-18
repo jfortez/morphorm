@@ -1,6 +1,5 @@
 "use client";
 import { Form } from "morphorm";
-import "morphorm/styles.css";
 import * as z from "zod";
 
 const formSchema = z.object({

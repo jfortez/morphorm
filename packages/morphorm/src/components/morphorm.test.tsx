@@ -3389,8 +3389,12 @@ describe("Morphorm", () => {
 							type: "text",
 							watchContext: ["maxLen"],
 							fieldProps: {
-								maxLength: ({ context }: { context: { maxLen: number }; fieldValues: Record<string, unknown> }) =>
-									context.maxLen,
+								maxLength: ({
+									context,
+								}: {
+									context: { maxLen: number };
+									fieldValues: Record<string, unknown>;
+								}) => context.maxLen,
 							},
 						} as any,
 					]}

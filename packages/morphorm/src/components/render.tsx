@@ -213,34 +213,36 @@ interface ArrayFieldItemProps {
 	itemTemplate: ResolvedFieldConfig[];
 }
 
-const ArrayFieldItem = memo(({ onRemove, idx, arrayFieldName, itemTemplate }: ArrayFieldItemProps) => {
-	const fields = useMemo(
-		() => buildArrayItemFields(arrayFieldName, idx, itemTemplate),
-		[idx, arrayFieldName, itemTemplate],
-	);
+const ArrayFieldItem = memo(
+	({ onRemove, idx, arrayFieldName, itemTemplate }: ArrayFieldItemProps) => {
+		const fields = useMemo(
+			() => buildArrayItemFields(arrayFieldName, idx, itemTemplate),
+			[idx, arrayFieldName, itemTemplate],
+		);
 
-	const nodes = useMemo<FormNode[]>(
-		() => fields.map((field) => ({ kind: "scalar", field })),
-		[fields],
-	);
+		const nodes = useMemo<FormNode[]>(
+			() => fields.map((field) => ({ kind: "scalar", field })),
+			[fields],
+		);
 
-	const handleRemove = useCallback(() => onRemove(idx), [onRemove, idx]);
+		const handleRemove = useCallback(() => onRemove(idx), [onRemove, idx]);
 
-	return (
-		<div className="formaArrayItem">
-			<Button
-				type="button"
-				className="formaArrayItemAction"
-				variant="destructive"
-				size="icon-sm"
-				onClick={handleRemove}
-			>
-				<TrashIcon className="formaIconSmall" />
-			</Button>
-			<Render nodes={nodes} />
-		</div>
-	);
-});
+		return (
+			<div className="formaArrayItem">
+				<Button
+					type="button"
+					className="formaArrayItemAction"
+					variant="destructive"
+					size="icon-sm"
+					onClick={handleRemove}
+				>
+					<TrashIcon className="formaIconSmall" />
+				</Button>
+				<Render nodes={nodes} />
+			</div>
+		);
+	},
+);
 
 const ContextAwareField = ({ field }: ContextAwareFieldProps) => {
 	const form = useFormContext() as unknown as ReturnType<UseAppFormType>;
@@ -253,7 +255,10 @@ const ContextAwareField = ({ field }: ContextAwareFieldProps) => {
 		if (!hasWatchContext) {
 			return undefined;
 		}
-		return (field.watchContext ?? []).reduce((acc, key) => ({ ...acc, [key]: context?.[key] }), {} as any);
+		return (field.watchContext ?? []).reduce(
+			(acc, key) => ({ ...acc, [key]: context?.[key] }),
+			{} as any,
+		);
 	}, [context, hasWatchContext, field.watchContext]);
 
 	if (hasWatch) {

@@ -27,7 +27,8 @@
 		"react-in-jsx-scope": "off",
 		"arrow-body-style": "off",
 		"sort-keys": "off",
-		"no-nested-ternary": "off"
+		"no-nested-ternary": "off",
+		"new-cap": "off"
 	},
 	"env": {
 		"builtin": true,
