@@ -44,7 +44,7 @@ export function generateGrid<Z extends z.ZodObject<any>>(
 		({
 			label: "",
 			mode: "value",
-			name: `placeholder_${Math.random().toString(36).slice(2)}`,
+			name: `placeholder_${crypto.getRandomValues(new Uint32Array(1))[0]!.toString(36)}`,
 			schema: [] as ParsedField[],
 			size,
 			type: "hidden" as const,

@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "bun:test";
 import { Form } from "./morphorm";
-import { useForm, Provider } from "./provider";
+import { useForm, Provider, useFormaContext } from "./provider";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "./ui/collapsible";
 import { FormSubmit } from "./submit";
 import { generateGrid } from "../core/layout";
@@ -3254,6 +3254,176 @@ describe("Morphorm", () => {
 					personal: { name: "John Doe" },
 					billing: { address: "123 Main St" },
 				});
+			});
+		});
+	});
+
+	describe("Edge Cases and Security", () => {
+		it("removes array item from middle and preserves correct sibling data", async () => {
+			const schema = z.object({
+				tags: z.array(
+					z.object({
+						label: z.string(),
+					}),
+				),
+			});
+
+			const user = userEvent.setup();
+
+			render(
+				<Form
+					schema={schema}
+					initialValues={{
+						tags: [{ label: "alpha" }, { label: "beta" }, { label: "gamma" }],
+					}}
+					onSubmit={mockSubmit}
+					showSubmit
+				/>,
+			);
+
+			const removeButtons = screen.getAllByRole("button", { name: "" });
+			// Remove the first trash-icon button (index 0 = first item "alpha")
+			await user.click(removeButtons[0]!);
+
+			const submitButton = screen.getByRole("button", { name: /submit/i });
+			await user.click(submitButton);
+
+			await waitFor(() => {
+				expect(mockSubmit).toHaveBeenCalledWith({
+					tags: [{ label: "beta" }, { label: "gamma" }],
+				});
+			});
+		});
+
+		it("getAllValues filters prototype-polluting keys", () => {
+			const schema = z.object({
+				name: z.string(),
+			});
+
+			let capturedValues: Record<string, unknown> | null = null;
+
+			// Renders after Form so the form is already registered
+			const TriggerCapture = () => {
+				const { getAllValues } = useFormaContext();
+				capturedValues = getAllValues();
+				return null;
+			};
+
+			render(
+				<Provider>
+					<Form
+						schema={schema}
+						initialValues={{ name: "safe" }}
+						onSubmit={mockSubmit}
+					/>
+					<TriggerCapture />
+				</Provider>,
+			);
+
+			expect(capturedValues).not.toBeNull();
+			const vals = capturedValues as unknown as Record<string, unknown>;
+			// Dangerous prototype keys must not appear on the result object itself
+			expect(Object.hasOwn(vals, "__proto__")).toBe(false);
+			expect(Object.hasOwn(vals, "constructor")).toBe(false);
+			expect(Object.hasOwn(vals, "prototype")).toBe(false);
+			expect(vals.name).toBe("safe");
+		});
+
+		it("renders field with static-only fieldProps without dynamic resolution", () => {
+			const schema = z.object({
+				email: z.string().email(),
+			});
+
+			render(
+				<Form
+					schema={schema}
+					fields={[
+						{
+							name: "email",
+							type: "text",
+							fieldProps: { maxLength: 100, autoComplete: "email" },
+						} as any,
+					]}
+					onSubmit={mockSubmit}
+					showSubmit
+				/>,
+			);
+
+			const input = screen.getByTestId("input-email");
+			expect(input).toBeInTheDocument();
+			expect(input).toHaveAttribute("maxLength", "100");
+		});
+
+		it("generates unique placeholder IDs for multiple grid spacers", () => {
+			const { generateGrid: gen } = { generateGrid };
+
+			const rows = gen([
+				{ mode: "value", name: "a", schema: [], size: 3, type: "text" },
+				{ type: "fill" } as any,
+				{ mode: "value", name: "b", schema: [], size: 3, type: "text" },
+				{ type: "fill" } as any,
+				{ mode: "value", name: "c", schema: [], size: 3, type: "text" },
+			] as any);
+
+			const placeholderNames = rows
+				.flat()
+				.filter((f) => f.type === "hidden")
+				.map((f) => f.name);
+
+			const uniqueNames = new Set(placeholderNames);
+			expect(uniqueNames.size).toBe(placeholderNames.length);
+		});
+
+		it("renders field with dynamic fieldProps based on context", () => {
+			const schema = z.object({
+				search: z.string(),
+			});
+
+			render(
+				<Form
+					schema={schema}
+					context={{ maxLen: 50 }}
+					fields={[
+						{
+							name: "search",
+							type: "text",
+							watchContext: ["maxLen"],
+							fieldProps: {
+								maxLength: ({ context }: { context: { maxLen: number }; fieldValues: Record<string, unknown> }) =>
+									context.maxLen,
+							},
+						} as any,
+					]}
+					onSubmit={mockSubmit}
+					showSubmit
+				/>,
+			);
+
+			const input = screen.getByTestId("input-search");
+			expect(input).toHaveAttribute("maxLength", "50");
+		});
+
+		it("array field with minLength shows validation error when too few items", async () => {
+			const schema = z.object({
+				items: z.array(z.object({ name: z.string() })).min(2, "Need at least 2 items"),
+			});
+
+			const user = userEvent.setup();
+
+			render(
+				<Form
+					schema={schema}
+					initialValues={{ items: [] }}
+					onSubmit={mockSubmit}
+					showSubmit
+				/>,
+			);
+
+			const submitButton = screen.getByRole("button", { name: /submit/i });
+			await user.click(submitButton);
+
+			await waitFor(() => {
+				expect(screen.getByText(/need at least 2 items/i)).toBeInTheDocument();
 			});
 		});
 	});

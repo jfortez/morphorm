@@ -18,8 +18,8 @@ export const NumberField = ({ ...props }: FieldComponentProps) => {
 			/>
 			<input
 				type="number"
-				className="forma-input"
 				{...props}
+				className="forma-input"
 				name={field.name}
 				data-testid={numTestId}
 				value={displayValue}

@@ -126,16 +126,20 @@ export const createFormComponent = <InitComponents extends FieldComponents>(
 			},
 		});
 
-		const unsub = useRef<() => void>(null!);
-
-		if (unsub.current === null && hasFormaProvider && formaContext) {
-			unsub.current = formaContext.registerForm(scopeId, form as any);
+		// Register synchronously so triggers can access the form during render.
+		// The ref prevents double-registration across re-renders.
+		const unsubRef = useRef<(() => void) | null>(null);
+		if (unsubRef.current === null && hasFormaProvider && formaContext) {
+			unsubRef.current = formaContext.registerForm(scopeId, form as any);
 		}
 
 		useLayoutEffect(() => {
-			if (hasFormaProvider && formaContext) {
-				return unsub.current;
-			}
+			// Cleanup on unmount or when scopeId/form changes.
+			// Setting null allows the render-phase code above to re-register on next render.
+			return () => {
+				unsubRef.current?.();
+				unsubRef.current = null;
+			};
 		}, [hasFormaProvider, formaContext, scopeId, form]);
 
 		useImperativeHandle(ref, () => form as any);
@@ -144,8 +148,10 @@ export const createFormComponent = <InitComponents extends FieldComponents>(
 			onCancel?.();
 		}, [onCancel]);
 
+		const internalValue = useMemo(() => ({ components, context }), [components, context]);
+
 		return (
-			<InternalProvider value={{ components, context }}>
+			<InternalProvider value={internalValue}>
 				<form.AppForm>
 					<PrimitiveForm className="formaRoot">
 						<Render

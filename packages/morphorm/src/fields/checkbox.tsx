@@ -7,8 +7,8 @@ export const CheckboxField = ({ ...props }: FieldComponentProps) => {
 	return (
 		<input
 			type="checkbox"
-			className="forma-checkbox"
 			{...props}
+			className="forma-checkbox"
 			name={field.name}
 			data-testid={`checkbox-${field.name}`}
 			checked={field.state.value}

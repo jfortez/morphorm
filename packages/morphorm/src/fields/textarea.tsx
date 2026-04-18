@@ -6,8 +6,8 @@ export const TextAreaField = ({ ...props }: FieldComponentProps) => {
 	const field = useFieldContext<string>();
 	return (
 		<textarea
-			className="forma-textarea"
 			{...props}
+			className="forma-textarea"
 			name={field.name}
 			data-testid={`textarea-${field.name}`}
 			value={field.state.value}

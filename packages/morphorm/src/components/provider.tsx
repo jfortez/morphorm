@@ -49,10 +49,15 @@ export const Provider: React.FC<FormaProviderProps> = ({ children, mode = "singl
 
 	const getAllValues = useCallback((): Record<string, unknown> => {
 		const combined: Record<string, unknown> = {};
+		const UNSAFE_KEYS = new Set(["__proto__", "constructor", "prototype"]);
 		forms.current.forEach((form, key) => {
 			const { values } = form.store.state;
 			if (key === "") {
-				Object.assign(combined, values);
+				for (const k of Object.keys(values as object)) {
+					if (!UNSAFE_KEYS.has(k)) {
+						(combined as Record<string, unknown>)[k] = (values as Record<string, unknown>)[k];
+					}
+				}
 			} else {
 				combined[key] = values;
 			}

@@ -2,7 +2,7 @@
 import type { z } from "zod";
 
 import * as React from "react";
-import { memo, useMemo, useCallback } from "react";
+import { memo, useMemo, useCallback, useRef } from "react";
 import { useStore } from "@tanstack/react-form";
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
@@ -123,6 +123,23 @@ const ArrayFieldError = memo(function ArrayFieldError({
 
 	const items = (field.state.value as unknown[]) || [];
 
+	const itemIdsRef = useRef<string[]>([]);
+	const idCounterRef = useRef(0);
+	while (itemIdsRef.current.length < items.length) {
+		itemIdsRef.current.push(`arr-item-${idCounterRef.current++}`);
+	}
+	if (itemIdsRef.current.length > items.length) {
+		itemIdsRef.current = itemIdsRef.current.slice(0, items.length);
+	}
+
+	const handleRemove = useCallback(
+		(idx: number) => {
+			itemIdsRef.current.splice(idx, 1);
+			field.removeValue(idx);
+		},
+		[field],
+	);
+
 	const errorMessage = React.useMemo(() => {
 		if (!showError || errors.length === 0) {
 			return null;
@@ -175,8 +192,8 @@ const ArrayFieldError = memo(function ArrayFieldError({
 					<div className="formaArrayItems">
 						{items.map((_, idx) => (
 							<ArrayFieldItem
-								key={idx}
-								onRemove={field.removeValue}
+								key={itemIdsRef.current[idx]}
+								onRemove={handleRemove}
 								idx={idx}
 								arrayFieldName={arrayField.name}
 								itemTemplate={itemTemplate}
