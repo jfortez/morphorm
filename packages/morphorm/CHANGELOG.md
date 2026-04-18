@@ -1,5 +1,17 @@
 # Morphorm
 
+## 0.2.9
+
+### Patch Changes
+
+- 44660bd: Add array validation errors and array defaults
+- 7a9873c: fix: submit button type=submit for Enter key
+- bf50948: fix: crypto IDs, prototype pollution guard, stable array keys, memo fixes
+- a78f460: fix: add label error style when submit fails
+- Updated dependencies [44660bd]
+- Updated dependencies [7a9873c]
+  - @morphorm/core@0.1.24
+
 ## 0.2.8
 
 ### Patch Changes

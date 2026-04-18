@@ -1,6 +1,6 @@
 {
 	"name": "morphorm",
-	"version": "0.2.8",
+	"version": "0.2.9",
 	"description": "Lightweight form library built with React and TanStack Form",
 	"keywords": [
 		"form",
