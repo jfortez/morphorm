@@ -33,11 +33,13 @@ export default function RootLayout({
 			suppressHydrationWarning
 		>
 			<head>
-				<Script
-					src="//unpkg.com/react-scan/dist/auto.global.js"
-					crossOrigin="anonymous"
-					strategy="beforeInteractive"
-				/>
+				{process.env.NODE_ENV === "development" && (
+					<Script
+						src="//unpkg.com/react-scan/dist/auto.global.js"
+						crossOrigin="anonymous"
+						strategy="beforeInteractive"
+					/>
+				)}
 				<script
 					dangerouslySetInnerHTML={{
 						__html: `(function(){var t=localStorage.getItem('theme');if(t==='light'){document.documentElement.classList.remove('dark')}else{document.documentElement.classList.add('dark')}})()`,
