@@ -1,6 +1,6 @@
 {
 	"name": "@morphorm/core",
-	"version": "0.1.23",
+	"version": "0.1.24",
 	"description": "Core schema validation and parsing for morphorm",
 	"license": "MIT",
 	"author": {
