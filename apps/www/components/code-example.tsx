@@ -1,11 +1,8 @@
 "use client";
 
-import SyntaxHighlighter from "react-syntax-highlighter";
-import { agate } from "react-syntax-highlighter/dist/cjs/styles/hljs";
+import { CodeBlock } from "./code-block";
 
-export const CodeExample = () => {
-	const codeString = `
-import { Form } from "morphorm"
+const codeString = `import { Form } from "morphorm"
 import * as z from "zod"
 
 const schema = z.object({
@@ -18,22 +15,9 @@ export function MyForm() {
   return (
     <Form
       schema={schema}
-      onSubmit={save}
-      fields={[
-        { name: "name"},
-        { name: "email" },
-        { name: "notify" },
-      ]}
       showSubmit
     />
   )
 }`;
-	return (
-		<SyntaxHighlighter
-			language="tsx"
-			style={agate}
-		>
-			{codeString}
-		</SyntaxHighlighter>
-	);
-};
+
+export const CodeExample = () => <CodeBlock>{codeString}</CodeBlock>;
